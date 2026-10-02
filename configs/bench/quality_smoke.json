@@ -1,0 +1,9 @@
+{
+  "name": "quality_smoke",
+  "cases": [
+    {"name": "ardy_h40", "backend": "ardy", "model": "ARDY-Core-RP-20FPS-Horizon40", "precision": "tf32",
+     "history": 4, "humans": 4, "duration": 9.0, "scenarios": ["stop_start"], "periods": ["refill", 0.5]},
+    {"name": "kimodo", "backend": "kimodo", "model": "Kimodo-SOMA-RP-v1.1", "precision": "tf32", "steps": 10,
+     "new_frames": 60, "history": 5, "humans": 4, "duration": 9.0, "scenarios": ["turn90"], "periods": ["refill"]}
+  ]
+}

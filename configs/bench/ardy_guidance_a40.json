@@ -1,0 +1,41 @@
+{
+  "name": "ardy_guidance_bracket_a40_v1",
+  "description": "Production cost if text prompts need guidance back: H40 5 steps with 2-pass (regular) and 3-pass (separated) guidance at population batch; bf16 no-guidance burst at 16k.",
+  "defaults": {
+    "reps": 4,
+    "warmup": 1,
+    "time_budget_s": 60
+  },
+  "cases": [
+    {
+      "name": "guidance_bracket",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "batch": [
+        1024,
+        4096
+      ],
+      "precision": "tf32",
+      "cfg_type": [
+        "regular",
+        "separated"
+      ],
+      "steps": 5,
+      "history": 4,
+      "future": 0,
+      "workload": "continue"
+    },
+    {
+      "name": "burst_bf16",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "batch": 16384,
+      "precision": "bf16",
+      "cfg_type": "nocfg",
+      "steps": 5,
+      "history": 4,
+      "future": 0,
+      "workload": "continue"
+    }
+  ]
+}

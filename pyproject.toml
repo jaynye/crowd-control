@@ -1,0 +1,135 @@
+# Project-wide environment for crowd-control: mjlab (simulation/training),
+# Kimodo (offline motion generation), and py-soma-x (SOMA body model).
+#
+#   UV_PYTHON_INSTALL_DIR=$PWD/.uv-python uv sync
+#
+# mjlab is a workspace member, so `uv run` inside mjlab/ uses this root's
+# .venv and uv.lock. Run `uv sync` only from this root: inside mjlab/ it does
+# an exact sync of the member and uninstalls kimodo and py-soma-x.
+#
+# Kimodo is a non-editable path dependency built from the pinned clone in
+# third_party/kimodo (scripts/bootstrap.sh; it compiles the MotionCorrection C++
+# extension). After changing that clone, run `uv sync --reinstall-package kimodo`. Do not install kimodo[demo]: it pulls
+# a viser fork that conflicts with mjlab's viser.
+#
+# Loading local weights without re-downloading needs, e.g. in sbatch scripts:
+#   export HF_HUB_OFFLINE=1 CHECKPOINT_DIR=$HOME/flash/checkpoints/kimodo
+# and SOMALayer(data_root="<this dir>/third_party/soma-x", ...).
+#
+# Runtime rule: the mjlab training loop consumes baked motion tensors and does
+# not run Kimodo (seconds per sample, ~17 GB with the text encoder). Never
+# call soma.setup_warp_for_ddp() in an mjlab process: it disables PyTorch's
+# CUDA caching allocator for the whole process.
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"
+
+[project]
+name = "crowd-control"
+version = "0.1.0"
+description = "Stochastic reactive human crowds for training LiDAR-conditioned humanoid policies"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  # Plain mjlab, not mjlab[cu128]: PyPI's torch 2.9.0 Linux wheel is already
+  # the CUDA 12.8 build, and `uv run` inside mjlab/ resolves this same wheel,
+  # so the shared venv's torch is never swapped between index variants.
+  "mjlab",
+  "kimodo",
+  # Matches third_party/soma-x/SOMA-X-HF-MANIFEST.json release_tag v0.3.2.
+  "py-soma-x==0.3.2",
+  # ARDY (third_party/ardy) runs from source on PYTHONPATH, not as a dependency: its
+  # numpy<2 and transformers==5.8.1 pins conflict with this env. This is the
+  # only runtime dependency it adds; its motion_correction extension is the
+  # same code Kimodo already installs.
+  "vector-quantize-pytorch>=1.25",
+]
+
+[project.scripts]
+crowd = "crowdmotion.cli:main"
+
+[dependency-groups]
+dev = [
+  "ipdb>=0.13.13",
+  "pre-commit>=4.3.0",
+  "pyright>=1.1.408",
+  "onnxruntime>=1.19.0",
+  "pytest>=9.0.3",
+  "ruff>=0.16.1",
+  "ty>=0.0.14",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+# Hoisted from mjlab/pyproject.toml: uv reads these only at the workspace root.
+conflicts = [
+  [{ package = "mjlab", extra = "cu128" }, { package = "mjlab", extra = "cpu" }],
+]
+constraint-dependencies = [
+  "GitPython>=3.1.57",
+  "lxml>=6.1.0",
+]
+required-environments = [
+  "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+environments = [
+  "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+[tool.uv.build-backend]
+# The package is src/crowdmotion; the distribution is named crowd-control.
+module-name = "crowdmotion"
+
+[tool.uv.workspace]
+members = ["mjlab"]
+
+[tool.uv.sources]
+mjlab = { workspace = true }
+kimodo = { path = "third_party/kimodo" }
+
+[[tool.uv.index]]
+url = "https://pypi.org/simple"
+
+[[tool.uv.index]]
+name = "nvidia"
+url = "https://pypi.nvidia.com/"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.pytest.ini_options]
+# GPU adapter tests run only when named: `pytest tests/gpu` (CUDA + checkpoints).
+testpaths = ["tests/unit", "tests/golden"]
+# tests/ for the shared synthetic library (`from synthetic import ...`).
+pythonpath = ["tests"]
+markers = [
+  "gpu: needs CUDA and model checkpoints (skipped without CUDA)",
+  "slow: real ARDY/Kimodo goldens on CPU, minutes each (run with -m slow)",
+  "golden: bit-exact golden outputs (tests/golden)",
+]
+addopts = "-m 'not slow'"
+
+[tool.ruff]
+# Two-space indents, as in mjlab. mjlab/ keeps its own configuration.
+src = ["src", "tests"]
+indent-width = 2
+line-length = 120
+extend-exclude = ["mjlab", "third_party", "runs", "fpo-control"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B"]
+ignore = ["B008", "B905"]
+
+[tool.ruff.lint.per-file-ignores]
+# Thread counts must be set before torch is imported.
+"tests/golden/harness.py" = ["E402"]
+# Timing closures are called inside the loop iteration that defines them.
+"scripts/smoke/*.py" = ["B023"]

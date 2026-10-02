@@ -1,0 +1,229 @@
+{
+ "arrays": {
+  "seed0/command": {
+   "dtype": "<f4",
+   "sha256": "69ebae23269f64a8302823a6a0f07cfa28ed8e98a5951276cc16d1e4f0ed65be",
+   "shape": [
+    16,
+    13,
+    2
+   ],
+   "stats": [
+    298.6437630020082,
+    558.0812672041357,
+    -3.1365702152252197,
+    3.1223902702331543,
+    0
+   ]
+  },
+  "seed0/contacts": {
+   "dtype": "|b1",
+   "sha256": "47396f9613da8f786186e33f58f0295011244a9f95d478b099ae700241bd493c",
+   "shape": [
+    16,
+    101,
+    4
+   ],
+   "stats": [
+    2862.0,
+    2862.0,
+    0.0,
+    1.0,
+    0
+   ]
+  },
+  "seed0/diagnostics": {
+   "dtype": "<f4",
+   "sha256": "d881f7e340541b5d2521d0d680d09adfbe4794ced611fb496735c1f9c4d0063a",
+   "shape": [
+    16,
+    13,
+    4
+   ],
+   "stats": [
+    141.26725884201005,
+    141.26725884201005,
+    0.0,
+    1.0,
+    0
+   ]
+  },
+  "seed0/edge": {
+   "dtype": "<i8",
+   "sha256": "5903c9849b3f966b85c9cb779bba24f3899b84031592f9b095433ab80af9ea5e",
+   "shape": [
+    16,
+    13
+   ],
+   "stats": [
+    16511133.0,
+    16511133.0,
+    2770.0,
+    160503.0,
+    0
+   ]
+  },
+  "seed0/foot_idx": {
+   "dtype": "<i8",
+   "sha256": "674af24c8f593458109008a08c61fec12a4a0462a296400d059c9aabe1ea74b5",
+   "shape": [
+    4
+   ],
+   "stats": [
+    94.0,
+    94.0,
+    21.0,
+    26.0,
+    0
+   ]
+  },
+  "seed0/goal": {
+   "dtype": "<f4",
+   "sha256": "41c0b878264e61fa3fa00a7515f90e8781e38f227342ad6564e1a9434a0478f7",
+   "shape": [
+    16,
+    13,
+    2
+   ],
+   "stats": [
+    151.47821879386902,
+    1151.4995539188385,
+    -5.6788740158081055,
+    5.394103050231934,
+    0
+   ]
+  },
+  "seed0/heading": {
+   "dtype": "<f4",
+   "sha256": "74e282a2c13b9b8699cd82d874e456d30bd201d75f2032f9b6002f32b7e51b32",
+   "shape": [
+    16,
+    101
+   ],
+   "stats": [
+    -748.6189308278263,
+    2579.8554192893207,
+    -3.4299540519714355,
+    2.923187494277954,
+    0
+   ]
+  },
+  "seed0/joints": {
+   "dtype": "<f4",
+   "sha256": "aa2252f2bf6064974b896933a0b31f016684c9b62d2b8c25bac5a7291b5771ad",
+   "shape": [
+    16,
+    101,
+    27,
+    3
+   ],
+   "stats": [
+    65698.3131424018,
+    233349.7314730183,
+    -5.6964311599731445,
+    5.834990978240967,
+    0
+   ]
+  },
+  "seed0/root": {
+   "dtype": "<f4",
+   "sha256": "efc7db91e74b6b85f79d850c996daf4a46e2fda2229eec5329748f1edd99d85e",
+   "shape": [
+    16,
+    101,
+    2
+   ],
+   "stats": [
+    927.8986960276961,
+    7090.252678796649,
+    -5.102879524230957,
+    5.61395263671875,
+    0
+   ]
+  },
+  "seed0/waiting": {
+   "dtype": "|b1",
+   "sha256": "9a84f1bc8730932b55c98a4346c814896c1c97333a004d6aac9e7a4fe27b5cc4",
+   "shape": [
+    16,
+    13
+   ],
+   "stats": [
+    4.0,
+    4.0,
+    0.0,
+    1.0,
+    0
+   ]
+  }
+ },
+ "graph_sha256": "acbc5df3f295b6def18de17ebbd08b9bff703cea79baa68fcf3a6c1589809828",
+ "json": {
+  "seed0/summary": {
+   "sha256": "eba534c0569a3707ff6edceaeee7150088040e96a7be6c0abe3f40a576544071",
+   "value": {
+    "acceleration_mps2_p50_p95": [
+     1.089809775352478,
+     4.529556465148916
+    ],
+    "body_turn_deg_s_p50_p95": [
+     14.319900512695312,
+     44.71232986450195
+    ],
+    "facing_travel_error_deg_p50_p95": [
+     71.3730697631836,
+     165.56603240966797
+    ],
+    "frame_composition": [
+     {
+      "count": 89,
+      "name": "Still / slow",
+      "percent": 5.5625
+     },
+     {
+      "count": 380,
+      "name": "Forward",
+      "percent": 23.75
+     },
+     {
+      "count": 316,
+      "name": "Oblique",
+      "percent": 19.75
+     },
+     {
+      "count": 218,
+      "name": "Sideways",
+      "percent": 13.625
+     },
+     {
+      "count": 597,
+      "name": "Backward",
+      "percent": 37.3125
+     }
+    ],
+    "graph_path_error_m_mean": 0.03367758169770241,
+    "min_pair_root_gap_m": 0.9003874659538269,
+    "moving_backward_percent": 39.510258107213765,
+    "moving_forward_percent": 25.14890800794176,
+    "moving_sideways_percent": 14.427531436135009,
+    "natural_successor_percent": 37.5,
+    "note": "Analysis cutoffs only; no empirical human calibration or acceptance thresholds.",
+    "path_turn_deg_s_p50_p95": [
+     28.49595832824707,
+     250.47975845336907
+    ],
+    "planted_foot_speed_mps_p50_p95": [
+     0.11764366924762726,
+     0.4476559579372406
+    ],
+    "root_gap_below_0_6m_frame_percent": 0.0,
+    "seconds": 5.0,
+    "seed": 0,
+    "speed_mps_p50_p95": [
+     0.7898849248886108,
+     1.3885118424892424
+    ]
+   }
+  }
+ }
+}

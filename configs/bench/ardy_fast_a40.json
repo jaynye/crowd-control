@@ -1,0 +1,13 @@
+{
+  "name": "ardy_fast_a40_v1",
+  "description": "ARDY settings that kept quality in the 2026-09-30 quality run (TF32, no guidance, fewer steps), at population batch sizes.",
+  "defaults": {"reps": 5, "warmup": 1, "time_budget_s": 60},
+  "cases": [
+    {"name": "fast", "backend": "ardy", "model": "ARDY-Core-RP-20FPS-Horizon40", "batch": [256, 1024, 4096, 16384],
+     "precision": "tf32", "cfg_type": "nocfg", "steps": [5, 2], "history": 4, "future": 0, "workload": "continue"},
+    {"name": "fast_h8_future", "backend": "ardy", "model": "ARDY-Core-RP-20FPS-Horizon8", "batch": [1024, 4096],
+     "precision": "tf32", "cfg_type": "nocfg", "steps": [5, 2], "history": 4, "future": 40, "workload": "continue"},
+    {"name": "fast_bf16", "backend": "ardy", "model": "ARDY-Core-RP-20FPS-Horizon40", "batch": [1024, 4096],
+     "precision": "bf16", "cfg_type": "nocfg", "steps": [5, 2], "history": 4, "future": 0, "workload": "continue"}
+  ]
+}

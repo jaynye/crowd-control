@@ -1,0 +1,12 @@
+{
+  "neighbors": 128,
+  "vel_weight": 0.1,
+  "pose_weight": 1.0,
+  "temperature": 0.01,
+  "inertialize": true,
+  "correct_yaw_deg": 5.0,
+  "correct_speed": 0.1,
+  "end_vel_weight": 0.25,
+  "lookahead": false,
+  "hunch_ratio": 0.85
+}

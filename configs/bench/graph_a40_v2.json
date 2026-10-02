@@ -1,0 +1,344 @@
+{
+  "name": "graph_a40_v2",
+  "description": "Selection vs coverage on the iteration-1 library: end-velocity cost, pose weight, lookahead, hunch filter. Base: k = 128 with correction. Adds posture (hunched-frame fraction) and post-change window diagnostics split by responders.",
+  "cases": [
+    {
+      "name": "ardy_h40_p04",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "steps": 5,
+      "cfg_type": "nocfg",
+      "precision": "tf32",
+      "history": 4,
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        0.4
+      ],
+      "branch_check": false
+    },
+    {
+      "name": "g128c",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1
+      },
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "g128c_ev0.1",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "end_vel_weight": 0.1
+      },
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "g128c_ev0.25",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "end_vel_weight": 0.25
+      },
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "g128c_ev0.5",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "end_vel_weight": 0.5
+      },
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "g128c_pw0.5",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "pose_weight": 0.5
+      },
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "g128c_pw0.25",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "pose_weight": 0.25
+      },
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "g128c_ev0.25_pw0.5",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "end_vel_weight": 0.25,
+        "pose_weight": 0.5
+      },
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "g128c_look",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "lookahead": true
+      },
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "g128c_look_ev0.25",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "lookahead": true,
+        "end_vel_weight": 0.25
+      },
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "g32c_ev0.25",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 32,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "end_vel_weight": 0.25
+      },
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "g128c_ev0.25_hunch",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "end_vel_weight": 0.25,
+        "hunch_ratio": 0.85
+      },
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "ardy_h40_p04_long",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "steps": 5,
+      "cfg_type": "nocfg",
+      "precision": "tf32",
+      "history": 4,
+      "humans": 32,
+      "duration": 60.0,
+      "scenarios": [
+        "cruise"
+      ],
+      "periods": [
+        0.4
+      ],
+      "branch_check": false
+    },
+    {
+      "name": "g128c_long",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1
+      },
+      "humans": 32,
+      "duration": 60.0,
+      "scenarios": [
+        "cruise"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "g128c_ev0.25_long",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "end_vel_weight": 0.25
+      },
+      "humans": 32,
+      "duration": 60.0,
+      "scenarios": [
+        "cruise"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "g128c_ev0.25_hunch_long",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "end_vel_weight": 0.25,
+        "hunch_ratio": 0.85
+      },
+      "humans": 32,
+      "duration": 60.0,
+      "scenarios": [
+        "cruise"
+      ],
+      "periods": [
+        "edge"
+      ]
+    }
+  ]
+}

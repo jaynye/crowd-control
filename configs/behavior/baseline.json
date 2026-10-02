@@ -1,0 +1,21 @@
+{
+  "description": "Current plaza and graph behavior. Evaluation seed bank only; not human calibration.",
+  "humans": 16,
+  "seconds": 20.0,
+  "seeds": [0, 1, 2],
+  "graph_overrides": {},
+  "steering": {
+    "half_x": 7.0,
+    "half_z": 5.0,
+    "speed_range": [0.8, 1.6],
+    "wait_probability": 0.3,
+    "wait_s": [1.5, 4.0],
+    "arrive_m": 0.6,
+    "personal_m": 1.2,
+    "horizon_s": 3.0,
+    "avoid_gain": 3.0,
+    "contact_m": 0.9,
+    "wall_margin_m": 0.8,
+    "obstacles": [[-6.0, 0.0, 0.3]]
+  }
+}

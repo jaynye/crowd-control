@@ -1,0 +1,45 @@
+# Large outputs that stay out of git. scripts/fetch_artifacts.sh copies an artifact from
+# the cluster to the same relative path here and checks its sha256; docs/data.md explains
+# each one. Cluster checkout: /coc/flash7/jni66/crowd-control on the GT skynet login nodes.
+
+[artifact.graph-default]
+description = "Saved motion graph (configs/graph/default.json) over library-ardy-h40; all behavior iteration needs"
+path = "runs/20261001T013254Z_motion_graph/graph.pt"
+sha256 = "acbc5df3f295b6def18de17ebbd08b9bff703cea79baa68fcf3a6c1589809828"
+bytes = 440898907
+default = true
+
+[artifact.library-ardy-h40]
+description = "Offline ARDY H40 library: 2,048 streams x 32 s (18.2 h); needed only to rebuild the graph"
+path = "runs/20261001T004918Z_ardy_library/library.pt"
+sha256 = "8c3b57d49e591f90ff31e326c8418b5a626041fbde6fdea0b1743f24bd13bed3"
+bytes = 1955614917
+default = false
+
+[artifact.pre-migration-snapshot]
+description = "Source tree before the 2026-10 reorganization; reference for GPU bit-exact checks"
+path = "runs/20261001T225208Z_pre_migration_snapshot/source.tar"
+sha256 = "f68407b617aa560c800f22e974efb963a9d92dc40337c23684938580a51ef6e0"
+bytes = 64665600
+default = false
+
+# Model weights from Hugging Face, downloaded by `scripts/fetch_artifacts.sh --checkpoints`
+# into the directory named by dir_env (set in scripts/env.sh). Loaders resolve
+# <dir>/<name>. Revisions are the ones used on the cluster.
+[checkpoint.ardy-h40]
+hf_repo = "nvidia/ARDY-Core-RP-20FPS-Horizon40"
+revision = "abe6c43beb28c867c950acb824b9c4ef3d63fb76"
+dir_env = "CHECKPOINTS_DIR"
+name = "ARDY-Core-RP-20FPS-Horizon40"
+
+[checkpoint.ardy-h8]
+hf_repo = "nvidia/ARDY-Core-RP-20FPS-Horizon8"
+revision = "257a0843a10bf5201065963d7bca2791e9393a7a"
+dir_env = "CHECKPOINTS_DIR"
+name = "ARDY-Core-RP-20FPS-Horizon8"
+
+[checkpoint.kimodo-soma]
+hf_repo = "nvidia/Kimodo-SOMA-RP-v1.1"
+revision = "6c9233af1180b8151e3c4703477104af5dce9dd5"
+dir_env = "CHECKPOINT_DIR"
+name = "Kimodo-SOMA-RP-v1.1"

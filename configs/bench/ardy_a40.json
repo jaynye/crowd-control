@@ -1,0 +1,21 @@
+{
+  "name": "ardy_a40_v1",
+  "description": "ARDY Core H8/H40 usable-motion sweep on one A40. Zero text features (Llama gated). Root-path constraints on every call.",
+  "defaults": {"reps": 5, "warmup": 1, "time_budget_s": 90},
+  "cases": [
+    {"name": "batch", "backend": "ardy", "model": ["ARDY-Core-RP-20FPS-Horizon8", "ARDY-Core-RP-20FPS-Horizon40"],
+     "batch": [1, 16, 64, 256, 1024, 4096], "precision": ["fp32", "tf32", "bf16"],
+     "history": 4, "future": 0, "cfg_type": "separated", "steps": 10, "workload": "continue"},
+    {"name": "guidance_steps", "backend": "ardy", "model": ["ARDY-Core-RP-20FPS-Horizon8", "ARDY-Core-RP-20FPS-Horizon40"],
+     "batch": [64, 1024], "precision": "tf32", "cfg_type": ["separated", "regular", "nocfg"], "steps": [10, 5, 2],
+     "history": 4, "future": 0, "workload": "continue"},
+    {"name": "window", "backend": "ardy", "model": ["ARDY-Core-RP-20FPS-Horizon8", "ARDY-Core-RP-20FPS-Horizon40"],
+     "batch": 1024, "precision": "tf32", "history": [4, 20, 40], "future": [0, 40, 160],
+     "cfg_type": "separated", "steps": 10, "workload": "continue"},
+    {"name": "fresh", "backend": "ardy", "model": ["ARDY-Core-RP-20FPS-Horizon8", "ARDY-Core-RP-20FPS-Horizon40"],
+     "batch": [64, 1024, 4096], "precision": "tf32", "cfg_type": "separated", "steps": 10, "future": 0, "workload": "fresh"},
+    {"name": "library_conditions", "backend": "ardy", "model": "ARDY-Core-RP-20FPS-Horizon40",
+     "batch": [64, 1024, 4096], "precision": "tf32", "conditions": "library", "history": 4, "future": 0,
+     "cfg_type": "separated", "steps": 10, "workload": "continue"}
+  ]
+}

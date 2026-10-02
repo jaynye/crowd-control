@@ -1,0 +1,131 @@
+{
+  "name": "graph_heldout_a40",
+  "description": "Held-out check of configs/library/graph_default.json (copied in below): fresh seed (1), 128 humans, against online ARDY replanned every 0.4 s. Ablation: root correction off. Not used to choose the default.",
+  "cases": [
+    {
+      "name": "ardy_h40_p04",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "steps": 5,
+      "cfg_type": "nocfg",
+      "precision": "tf32",
+      "history": 4,
+      "humans": 128,
+      "duration": 12.0,
+      "seed": 1,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        0.4
+      ],
+      "branch_check": false
+    },
+    {
+      "name": "graph_default",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "vel_weight": 0.1,
+        "pose_weight": 1.0,
+        "temperature": 0.01,
+        "inertialize": true,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "end_vel_weight": 0.25,
+        "lookahead": false,
+        "hunch_ratio": 0.85
+      },
+      "humans": 128,
+      "duration": 12.0,
+      "seed": 1,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "graph_default_nocorr",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "vel_weight": 0.1,
+        "pose_weight": 1.0,
+        "temperature": 0.01,
+        "inertialize": true,
+        "correct_yaw_deg": 0.0,
+        "correct_speed": 0.0,
+        "end_vel_weight": 0.25,
+        "lookahead": false,
+        "hunch_ratio": 0.85
+      },
+      "humans": 128,
+      "duration": 12.0,
+      "seed": 1,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "edge"
+      ]
+    },
+    {
+      "name": "ardy_h40_p04_long",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "steps": 5,
+      "cfg_type": "nocfg",
+      "precision": "tf32",
+      "history": 4,
+      "humans": 128,
+      "duration": 60.0,
+      "seed": 1,
+      "scenarios": [
+        "cruise"
+      ],
+      "periods": [
+        0.4
+      ],
+      "branch_check": false
+    },
+    {
+      "name": "graph_default_long",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 128,
+        "vel_weight": 0.1,
+        "pose_weight": 1.0,
+        "temperature": 0.01,
+        "inertialize": true,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1,
+        "end_vel_weight": 0.25,
+        "lookahead": false,
+        "hunch_ratio": 0.85
+      },
+      "humans": 128,
+      "duration": 60.0,
+      "seed": 1,
+      "scenarios": [
+        "cruise"
+      ],
+      "periods": [
+        "edge"
+      ]
+    }
+  ]
+}

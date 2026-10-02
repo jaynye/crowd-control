@@ -1,0 +1,31 @@
+# Environment and tool caches
+.venv/
+.uv-python/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.cache/
+*.egg-info/
+
+# Third-party clones and assets (scripts/bootstrap.sh) and model weights
+/third_party/
+/checkpoints
+
+# Run outputs: indexed in memory/log/runs.md; large ones fetched by scripts/fetch_artifacts.sh
+/runs/
+# Slurm job logs (scripts/slurm/*.sbatch write here)
+/logs/
+
+# mjlab is tracked; its environments and local logs are not
+/mjlab/.venv*
+/mjlab/logs/
+
+# Unrelated clone kept on the cluster only
+/fpo-control/
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store

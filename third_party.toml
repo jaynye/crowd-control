@@ -1,0 +1,31 @@
+# Pinned third-party sources. scripts/bootstrap.sh reads this file; docs/third-party.md
+# explains each entry and how to upgrade a pin.
+#
+# mjlab is first-party: its source is tracked in mjlab/ with our changes. The upstream
+# base commit is recorded here so that upstream releases can be diffed and merged.
+
+[mjlab]
+role = "first-party"
+upstream = "https://github.com/mujocolab/mjlab.git"
+base_commit = "c2e1e06400e309b6897a536693fe5d2aa772c5b2"
+
+# Path dependency of the uv workspace (pyproject.toml). Built non-editable; it compiles
+# the MotionCorrection C++ extension, which ARDY reuses.
+[kimodo]
+url = "https://github.com/nv-tlabs/kimodo.git"
+commit = "58e781898b3d7e328a676a75d3e338c45dce3ad9"
+path = "third_party/kimodo"
+
+# Runs from source on PYTHONPATH (scripts/env.sh), never installed: its numpy<2 and
+# transformers pins conflict with this environment.
+[ardy]
+url = "https://github.com/nv-tlabs/ardy.git"
+commit = "693f74d13b3d04a0a22ce127ee79c929dd89756b"
+path = "third_party/ardy"
+
+# SOMA-X body-model assets for py-soma-x==0.3.2 (Hugging Face model repository).
+[soma-x]
+hf_repo = "nvidia/soma-x"
+revision = "v0.3.2"
+hf_commit = "c8ed7284fec1edf59c75f5fe527ea03aab7e574b"
+path = "third_party/soma-x"

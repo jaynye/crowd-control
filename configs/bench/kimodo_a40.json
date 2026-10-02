@@ -1,0 +1,17 @@
+{
+  "name": "kimodo_a40_v1",
+  "description": "Kimodo-SOMA-RP-v1.1 usable-motion sweep on one A40, continuing from 5 executed frames (multi-prompt transition). Zero text features.",
+  "defaults": {"reps": 4, "warmup": 1, "time_budget_s": 150},
+  "cases": [
+    {"name": "batch", "backend": "kimodo", "model": "Kimodo-SOMA-RP-v1.1", "batch": [1, 16, 64, 256],
+     "new_frames": [30, 60, 150], "history": 5, "steps": 25, "precision": ["tf32", "bf16"], "workload": "continue"},
+    {"name": "steps", "backend": "kimodo", "model": "Kimodo-SOMA-RP-v1.1", "batch": 64, "new_frames": 150, "history": 5,
+     "steps": [100, 10], "precision": ["tf32", "bf16"], "workload": "continue"},
+    {"name": "fp32_reference", "backend": "kimodo", "model": "Kimodo-SOMA-RP-v1.1", "batch": [1, 64], "new_frames": 150,
+     "history": 5, "steps": 25, "precision": "fp32", "workload": "continue"},
+    {"name": "postprocess", "backend": "kimodo", "model": "Kimodo-SOMA-RP-v1.1", "batch": 64, "new_frames": [60, 150],
+     "history": 5, "steps": 25, "precision": "tf32", "post_processing": [false, true], "to_soma77": true, "workload": "continue"},
+    {"name": "fresh", "backend": "kimodo", "model": "Kimodo-SOMA-RP-v1.1", "batch": [64, 256], "new_frames": 150,
+     "steps": 25, "precision": "tf32", "workload": "fresh"}
+  ]
+}

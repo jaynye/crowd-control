@@ -1,0 +1,673 @@
+{
+ "arrays": {
+  "seed0/command": {
+   "dtype": "<f4",
+   "sha256": "8c4a696fa63833709b136dbacccaa1003cb122ea0dddcc5b4f060ab976a0bad5",
+   "shape": [
+    16,
+    50,
+    2
+   ],
+   "stats": [
+    605.9017356822733,
+    1963.121837634826,
+    -3.1365702152252197,
+    3.133270025253296,
+    0
+   ]
+  },
+  "seed0/contacts": {
+   "dtype": "|b1",
+   "sha256": "e9bb878dd9b768633b355c2c52f2c0a2d73b11553236be23db95534adfa1beec",
+   "shape": [
+    16,
+    401,
+    4
+   ],
+   "stats": [
+    13356.0,
+    13356.0,
+    0.0,
+    1.0,
+    0
+   ]
+  },
+  "seed0/diagnostics": {
+   "dtype": "<f4",
+   "sha256": "0bcefead9f4c18cbdbe21748a32f695540f6b6f0378340f3603bcb1f2fdfa263",
+   "shape": [
+    16,
+    50,
+    4
+   ],
+   "stats": [
+    501.5626317272545,
+    501.5626317272545,
+    0.0,
+    1.107317328453064,
+    0
+   ]
+  },
+  "seed0/edge": {
+   "dtype": "<i8",
+   "sha256": "6a489c90e31940fb3d3712c4e0654a123ab30519565ca0bd3b05b36e3f1f22a4",
+   "shape": [
+    16,
+    50
+   ],
+   "stats": [
+    64106663.0,
+    64106663.0,
+    397.0,
+    163447.0,
+    0
+   ]
+  },
+  "seed0/foot_idx": {
+   "dtype": "<i8",
+   "sha256": "674af24c8f593458109008a08c61fec12a4a0462a296400d059c9aabe1ea74b5",
+   "shape": [
+    4
+   ],
+   "stats": [
+    94.0,
+    94.0,
+    21.0,
+    26.0,
+    0
+   ]
+  },
+  "seed0/goal": {
+   "dtype": "<f4",
+   "sha256": "f8af37a6268bbca10a1f2c15a4a9d1e8c27fd71c1b948f3aa166775889a89969",
+   "shape": [
+    16,
+    50,
+    2
+   ],
+   "stats": [
+    -90.66379952430725,
+    4199.232448816299,
+    -5.6788740158081055,
+    5.986355781555176,
+    0
+   ]
+  },
+  "seed0/heading": {
+   "dtype": "<f4",
+   "sha256": "d862d77ecf085a249ea0840c4c186010132ab1797988edf68825e1c9ed2de921",
+   "shape": [
+    16,
+    401
+   ],
+   "stats": [
+    -1974.3664119765162,
+    10227.662263289094,
+    -3.663325071334839,
+    3.3276259899139404,
+    0
+   ]
+  },
+  "seed0/joints": {
+   "dtype": "<f4",
+   "sha256": "01cbcf4b86f52c084377ddd9017c42b5650dd7fa9086751754c658dc0b3cc82e",
+   "shape": [
+    16,
+    401,
+    27,
+    3
+   ],
+   "stats": [
+    263260.786141319,
+    848688.6270282865,
+    -5.8211140632629395,
+    5.834990978240967,
+    0
+   ]
+  },
+  "seed0/root": {
+   "dtype": "<f4",
+   "sha256": "bd7d3175437549dc9f11296a5109c02464aeff1bd5e044e2c31d175bf1a34a66",
+   "shape": [
+    16,
+    401,
+    2
+   ],
+   "stats": [
+    3782.654577791691,
+    25549.57391562313,
+    -5.481201171875,
+    5.61395263671875,
+    0
+   ]
+  },
+  "seed0/waiting": {
+   "dtype": "|b1",
+   "sha256": "5cbba3b1acd80373cb595313603be9bd8ae6393af27dfe9d06259f3722bfa118",
+   "shape": [
+    16,
+    50
+   ],
+   "stats": [
+    41.0,
+    41.0,
+    0.0,
+    1.0,
+    0
+   ]
+  },
+  "seed1/command": {
+   "dtype": "<f4",
+   "sha256": "43f807c7e9ea4931f087f6170cc0e130c179ac5b4a67b128b315719c417ae15a",
+   "shape": [
+    16,
+    50,
+    2
+   ],
+   "stats": [
+    657.1685272612376,
+    1992.431493115495,
+    -4.153564453125,
+    3.7341866493225098,
+    0
+   ]
+  },
+  "seed1/contacts": {
+   "dtype": "|b1",
+   "sha256": "2f0dbe474b92d684c97dbcfe30d62488a91125d245807e1c2ace047c6e4fb184",
+   "shape": [
+    16,
+    401,
+    4
+   ],
+   "stats": [
+    13719.0,
+    13719.0,
+    0.0,
+    1.0,
+    0
+   ]
+  },
+  "seed1/diagnostics": {
+   "dtype": "<f4",
+   "sha256": "416f18349fece5eacf2227e770ecfd3e20b8ee8052dc129bdb29ded8d6b8c46c",
+   "shape": [
+    16,
+    50,
+    4
+   ],
+   "stats": [
+    522.2589190101717,
+    522.2589190101717,
+    0.0,
+    1.2311958074569702,
+    0
+   ]
+  },
+  "seed1/edge": {
+   "dtype": "<i8",
+   "sha256": "407b2e76e5edf4147843175093192279a0a4f8412d73a0f9993ba024b3f1b7aa",
+   "shape": [
+    16,
+    50
+   ],
+   "stats": [
+    64826299.0,
+    64826299.0,
+    506.0,
+    162853.0,
+    0
+   ]
+  },
+  "seed1/foot_idx": {
+   "dtype": "<i8",
+   "sha256": "674af24c8f593458109008a08c61fec12a4a0462a296400d059c9aabe1ea74b5",
+   "shape": [
+    4
+   ],
+   "stats": [
+    94.0,
+    94.0,
+    21.0,
+    26.0,
+    0
+   ]
+  },
+  "seed1/goal": {
+   "dtype": "<f4",
+   "sha256": "f86aca6dfd9b480a91a2bd9fe7b09ec2a0a4fd4f694c3dd8146b829b70153fd9",
+   "shape": [
+    16,
+    50,
+    2
+   ],
+   "stats": [
+    1006.0360713005066,
+    3793.5233035087585,
+    -5.768328666687012,
+    5.976297378540039,
+    0
+   ]
+  },
+  "seed1/heading": {
+   "dtype": "<f4",
+   "sha256": "8e5e2078438cb9096a5573349fa730de41784201279c4963727a0856ec1c75bf",
+   "shape": [
+    16,
+    401
+   ],
+   "stats": [
+    2978.3965300600976,
+    10530.588895203546,
+    -4.662947654724121,
+    4.561385154724121,
+    0
+   ]
+  },
+  "seed1/joints": {
+   "dtype": "<f4",
+   "sha256": "2a6dd29a1d4b7be952ddb07d96c48aaef9a5a12141d5d3633ebdac25fb5f0a99",
+   "shape": [
+    16,
+    401,
+    27,
+    3
+   ],
+   "stats": [
+    345833.6916819955,
+    857041.4778780239,
+    -6.209157943725586,
+    6.294344425201416,
+    0
+   ]
+  },
+  "seed1/root": {
+   "dtype": "<f4",
+   "sha256": "1ef801fcf9bab92f7ed2be4005e38ed6a3508fe62707e03c296ce2af51cc303a",
+   "shape": [
+    16,
+    401,
+    2
+   ],
+   "stats": [
+    6742.637442983454,
+    25553.798911718884,
+    -5.895011901855469,
+    6.085699081420898,
+    0
+   ]
+  },
+  "seed1/waiting": {
+   "dtype": "|b1",
+   "sha256": "e5a65d13ed7c9baf4042a9f4866732fdeca4678d9b4a1b64a5c9c66995438efc",
+   "shape": [
+    16,
+    50
+   ],
+   "stats": [
+    49.0,
+    49.0,
+    0.0,
+    1.0,
+    0
+   ]
+  },
+  "seed2/command": {
+   "dtype": "<f4",
+   "sha256": "9ef92e061452a3f3fbb67be0f3f5617e71f24d9331b621b3d030b59c7b4bc15d",
+   "shape": [
+    16,
+    50,
+    2
+   ],
+   "stats": [
+    732.7119226250798,
+    1894.6945522818714,
+    -3.129862070083618,
+    3.123573064804077,
+    0
+   ]
+  },
+  "seed2/contacts": {
+   "dtype": "|b1",
+   "sha256": "8959c885e437f3693221272a644112422bbbfada83a4489bdda206524a56e0d1",
+   "shape": [
+    16,
+    401,
+    4
+   ],
+   "stats": [
+    13067.0,
+    13067.0,
+    0.0,
+    1.0,
+    0
+   ]
+  },
+  "seed2/diagnostics": {
+   "dtype": "<f4",
+   "sha256": "9e008ddbe67bf05817272e66f18751c97fada1a5a5763a9f85587d488018f1df",
+   "shape": [
+    16,
+    50,
+    4
+   ],
+   "stats": [
+    513.4112596031919,
+    513.4112596031919,
+    0.0,
+    1.0,
+    0
+   ]
+  },
+  "seed2/edge": {
+   "dtype": "<i8",
+   "sha256": "9edeeca151bce80367d9cfb25cf5d5d62b211232c7929dd105fd52c49402dff8",
+   "shape": [
+    16,
+    50
+   ],
+   "stats": [
+    69185944.0,
+    69185944.0,
+    510.0,
+    163449.0,
+    0
+   ]
+  },
+  "seed2/foot_idx": {
+   "dtype": "<i8",
+   "sha256": "674af24c8f593458109008a08c61fec12a4a0462a296400d059c9aabe1ea74b5",
+   "shape": [
+    4
+   ],
+   "stats": [
+    94.0,
+    94.0,
+    21.0,
+    26.0,
+    0
+   ]
+  },
+  "seed2/goal": {
+   "dtype": "<f4",
+   "sha256": "54c65dc543774b0cd588722874877b721432bd50b2fa2d92e1aa6ac1e0f22c99",
+   "shape": [
+    16,
+    50,
+    2
+   ],
+   "stats": [
+    142.43463039398193,
+    3963.076994895935,
+    -5.928382873535156,
+    5.789865493774414,
+    0
+   ]
+  },
+  "seed2/heading": {
+   "dtype": "<f4",
+   "sha256": "ef533a95923217d4ce0bdc3c089af47de9edf78ba6ca913bcdf7fa5c630d95c7",
+   "shape": [
+    16,
+    401
+   ],
+   "stats": [
+    2175.0222714748234,
+    9468.136521315202,
+    -4.118431091308594,
+    3.4390809535980225,
+    0
+   ]
+  },
+  "seed2/joints": {
+   "dtype": "<f4",
+   "sha256": "245131207ed51ec18c8fab3c30d3ff0f338583978358289037dfc722db754796",
+   "shape": [
+    16,
+    401,
+    27,
+    3
+   ],
+   "stats": [
+    231223.62230402516,
+    832108.8057835379,
+    -6.004379749298096,
+    5.931258678436279,
+    0
+   ]
+  },
+  "seed2/root": {
+   "dtype": "<f4",
+   "sha256": "c550f80f014ef8e5e92268d7b3306fe144c60c825aa59765cc3524ddc6dd29a5",
+   "shape": [
+    16,
+    401,
+    2
+   ],
+   "stats": [
+    2507.4767336379737,
+    24732.485819749534,
+    -5.632107734680176,
+    5.672421932220459,
+    0
+   ]
+  },
+  "seed2/waiting": {
+   "dtype": "|b1",
+   "sha256": "2409201f3664610b6c94defa04d6317c0900b82d25f2417515827465632bddf3",
+   "shape": [
+    16,
+    50
+   ],
+   "stats": [
+    71.0,
+    71.0,
+    0.0,
+    1.0,
+    0
+   ]
+  }
+ },
+ "graph_sha256": "acbc5df3f295b6def18de17ebbd08b9bff703cea79baa68fcf3a6c1589809828",
+ "json": {
+  "seed0/summary": {
+   "sha256": "83c329a8584e18134be4ad6c8970bf7461f73b7fd8d8318f11a38a505e35cd93",
+   "value": {
+    "acceleration_mps2_p50_p95": [
+     0.9243263602256775,
+     5.1870982646942085
+    ],
+    "body_turn_deg_s_p50_p95": [
+     14.92314338684082,
+     44.02384948730469
+    ],
+    "facing_travel_error_deg_p50_p95": [
+     80.27024841308594,
+     169.77655029296875
+    ],
+    "frame_composition": [
+     {
+      "count": 679,
+      "name": "Still / slow",
+      "percent": 10.609375
+     },
+     {
+      "count": 1556,
+      "name": "Forward",
+      "percent": 24.3125
+     },
+     {
+      "count": 919,
+      "name": "Oblique",
+      "percent": 14.359375
+     },
+     {
+      "count": 1166,
+      "name": "Sideways",
+      "percent": 18.21875
+     },
+     {
+      "count": 2080,
+      "name": "Backward",
+      "percent": 32.5
+     }
+    ],
+    "graph_path_error_m_mean": 0.03601888567209244,
+    "min_pair_root_gap_m": 0.6939895153045654,
+    "moving_backward_percent": 36.357280195769974,
+    "moving_forward_percent": 27.19804230029715,
+    "moving_sideways_percent": 20.38105226359028,
+    "natural_successor_percent": 26.750001311302185,
+    "note": "Analysis cutoffs only; no empirical human calibration or acceptance thresholds.",
+    "path_turn_deg_s_p50_p95": [
+     31.305761337280273,
+     312.96941833496095
+    ],
+    "planted_foot_speed_mps_p50_p95": [
+     0.13645820319652557,
+     0.48258718848228455
+    ],
+    "root_gap_below_0_6m_frame_percent": 0.0,
+    "seconds": 20.0,
+    "seed": 0,
+    "speed_mps_p50_p95": [
+     0.6482370495796204,
+     1.2773310303688046
+    ]
+   }
+  },
+  "seed1/summary": {
+   "sha256": "a535f48184a3cb67147a1d1d5605d4d3abe9631816adec49badbd51cec5647ab",
+   "value": {
+    "acceleration_mps2_p50_p95": [
+     0.921879917383194,
+     5.8418488502502415
+    ],
+    "body_turn_deg_s_p50_p95": [
+     14.633269309997559,
+     54.28173675537107
+    ],
+    "facing_travel_error_deg_p50_p95": [
+     83.5620346069336,
+     170.98950576782227
+    ],
+    "frame_composition": [
+     {
+      "count": 732,
+      "name": "Still / slow",
+      "percent": 11.4375
+     },
+     {
+      "count": 1370,
+      "name": "Forward",
+      "percent": 21.40625
+     },
+     {
+      "count": 926,
+      "name": "Oblique",
+      "percent": 14.46875
+     },
+     {
+      "count": 1554,
+      "name": "Sideways",
+      "percent": 24.28125
+     },
+     {
+      "count": 1818,
+      "name": "Backward",
+      "percent": 28.40625
+     }
+    ],
+    "graph_path_error_m_mean": 0.0402228869497776,
+    "min_pair_root_gap_m": 0.517126202583313,
+    "moving_backward_percent": 32.074805928016936,
+    "moving_forward_percent": 24.170783345095273,
+    "moving_sideways_percent": 27.417078334509526,
+    "natural_successor_percent": 26.249998807907104,
+    "note": "Analysis cutoffs only; no empirical human calibration or acceptance thresholds.",
+    "path_turn_deg_s_p50_p95": [
+     32.825613021850586,
+     336.6774353027348
+    ],
+    "planted_foot_speed_mps_p50_p95": [
+     0.13698625564575195,
+     0.507025420665741
+    ],
+    "root_gap_below_0_6m_frame_percent": 1.7456359102244388,
+    "seconds": 20.0,
+    "seed": 1,
+    "speed_mps_p50_p95": [
+     0.6507215797901154,
+     1.1621859312057494
+    ]
+   }
+  },
+  "seed2/summary": {
+   "sha256": "3117e1a99f09efb81f270e12b9f52c00d9a8b3f728c3d47fa5bf8e3c27d5d0ba",
+   "value": {
+    "acceleration_mps2_p50_p95": [
+     0.9739839732646942,
+     5.436556315422055
+    ],
+    "body_turn_deg_s_p50_p95": [
+     15.636077880859375,
+     51.669424057006836
+    ],
+    "facing_travel_error_deg_p50_p95": [
+     89.22486114501953,
+     173.22798538208008
+    ],
+    "frame_composition": [
+     {
+      "count": 604,
+      "name": "Still / slow",
+      "percent": 9.4375
+     },
+     {
+      "count": 1272,
+      "name": "Forward",
+      "percent": 19.875
+     },
+     {
+      "count": 994,
+      "name": "Oblique",
+      "percent": 15.53125
+     },
+     {
+      "count": 1683,
+      "name": "Sideways",
+      "percent": 26.296875
+     },
+     {
+      "count": 1847,
+      "name": "Backward",
+      "percent": 28.859375
+     }
+    ],
+    "graph_path_error_m_mean": 0.03480416163802147,
+    "min_pair_root_gap_m": 0.6571028828620911,
+    "moving_backward_percent": 31.866804692891648,
+    "moving_forward_percent": 21.946169772256727,
+    "moving_sideways_percent": 29.03726708074534,
+    "natural_successor_percent": 28.24999988079071,
+    "note": "Analysis cutoffs only; no empirical human calibration or acceptance thresholds.",
+    "path_turn_deg_s_p50_p95": [
+     32.85552978515625,
+     295.5534683227536
+    ],
+    "planted_foot_speed_mps_p50_p95": [
+     0.12785151600837708,
+     0.4533461183309555
+    ],
+    "root_gap_below_0_6m_frame_percent": 0.0,
+    "seconds": 20.0,
+    "seed": 2,
+    "speed_mps_p50_p95": [
+     0.6755706965923309,
+     1.196066468954086
+    ]
+   }
+  }
+ }
+}

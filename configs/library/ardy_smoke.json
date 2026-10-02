@@ -1,0 +1,14 @@
+{
+  "name": "ardy_library_smoke",
+  "description": "Tiny library to exercise the pipeline.",
+  "model": "ARDY-Core-RP-20FPS-Horizon40",
+  "steps": 5,
+  "cfg_type": "nocfg",
+  "precision": "tf32",
+  "history": 4,
+  "edge_frames": 8,
+  "seed": 0,
+  "humans": 64,
+  "batch": 64,
+  "duration": 8.0
+}

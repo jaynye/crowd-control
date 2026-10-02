@@ -1,0 +1,46 @@
+{
+  "name": "ardy_library_a40_v1",
+  "description": "ARDY H40 at the recommended online setting (TF32, no guidance, 5 steps), replanned every 8-frame edge under random locomotion commands. 2,048 streams x 32 s = 18.2 h.",
+  "model": "ARDY-Core-RP-20FPS-Horizon40",
+  "steps": 5,
+  "cfg_type": "nocfg",
+  "precision": "tf32",
+  "history": 4,
+  "edge_frames": 8,
+  "seed": 0,
+  "humans": 2048,
+  "batch": 1024,
+  "duration": 32.0,
+  "commands": {
+    "p_stand": 0.2,
+    "stand_s": [
+      1.0,
+      4.0
+    ],
+    "walk_s": [
+      1.5,
+      6.0
+    ],
+    "speed_bands": [
+      [
+        0.15,
+        0.3,
+        0.8
+      ],
+      [
+        0.7,
+        0.8,
+        1.5
+      ],
+      [
+        0.15,
+        1.5,
+        2.0
+      ]
+    ],
+    "p_keep_heading": 0.35,
+    "p_reverse_range": 0.2,
+    "p_curve": 0.25,
+    "curve_rate_deg": 40.0
+  }
+}

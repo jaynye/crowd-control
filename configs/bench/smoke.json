@@ -1,0 +1,15 @@
+{
+  "name": "smoke",
+  "description": "Minutes-long pipeline check of the throughput harness on both backends.",
+  "defaults": {"reps": 2, "warmup": 1, "time_budget_s": 20},
+  "cases": [
+    {"name": "ardy", "backend": "ardy", "model": ["ARDY-Core-RP-20FPS-Horizon8", "ARDY-Core-RP-20FPS-Horizon40"],
+     "batch": [4, 64], "precision": ["fp32", "bf16"], "history": 4, "future": 0, "cfg_type": "separated", "steps": 10, "workload": "continue"},
+    {"name": "ardy_fresh_lib", "backend": "ardy", "model": "ARDY-Core-RP-20FPS-Horizon8", "batch": 16,
+     "workload": "fresh", "conditions": ["vectorized", "library"]},
+    {"name": "kimodo", "backend": "kimodo", "model": "Kimodo-SOMA-RP-v1.1", "batch": [4],
+     "new_frames": 30, "history": 5, "steps": 5, "precision": ["tf32", "bf16"], "workload": ["fresh", "continue"]},
+    {"name": "kimodo_post", "backend": "kimodo", "model": "Kimodo-SOMA-RP-v1.1", "batch": 4,
+     "new_frames": 30, "history": 5, "steps": 5, "precision": "tf32", "post_processing": true, "to_soma77": true}
+  ]
+}

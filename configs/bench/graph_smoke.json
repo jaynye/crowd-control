@@ -1,0 +1,42 @@
+{
+  "name": "graph_smoke",
+  "description": "Pipeline smoke.",
+  "cases": [
+    {
+      "name": "ardy_h40_p04",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "steps": 5,
+      "cfg_type": "nocfg",
+      "precision": "tf32",
+      "history": 4,
+      "humans": 8,
+      "duration": 4.0,
+      "scenarios": [
+        "stop_start"
+      ],
+      "periods": [
+        0.4
+      ],
+      "branch_check": false
+    },
+    {
+      "name": "graph_k8",
+      "backend": "graph",
+      "graph": {
+        "neighbors": 8,
+        "correct_yaw_deg": 5.0,
+        "correct_speed": 0.1
+      },
+      "humans": 8,
+      "duration": 4.0,
+      "scenarios": [
+        "cruise",
+        "turn90"
+      ],
+      "periods": [
+        "edge"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,455 @@
+{
+  "name": "quality_a40_v1",
+  "description": "Closed-loop continuation quality on one A40. Zero text features. 16-32 humans per case, 12 s rollouts.",
+  "ardy": [
+    {
+      "name": "ardy_h40_tf32",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "precision": "tf32",
+      "history": 4,
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "refill",
+        0.2,
+        0.5,
+        1.0
+      ]
+    },
+    {
+      "name": "ardy_h8_tf32",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon8",
+      "precision": "tf32",
+      "history": 4,
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "refill",
+        0.2
+      ]
+    },
+    {
+      "name": "ardy_h8_future40",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon8",
+      "precision": "tf32",
+      "history": 4,
+      "future": 40,
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill"
+      ]
+    },
+    {
+      "name": "ardy_h40_bf16",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "precision": "bf16",
+      "history": 4,
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill",
+        0.5
+      ]
+    },
+    {
+      "name": "ardy_h40_steps5",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "precision": "tf32",
+      "steps": 5,
+      "history": 4,
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill",
+        0.5
+      ]
+    },
+    {
+      "name": "ardy_h40_nocfg",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "precision": "tf32",
+      "cfg_type": "nocfg",
+      "history": 4,
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill",
+        0.5
+      ]
+    },
+    {
+      "name": "ardy_h40_hist20",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "precision": "tf32",
+      "history": 20,
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill",
+        0.5
+      ]
+    }
+  ],
+  "kimodo": [
+    {
+      "name": "kimodo_2s_s25",
+      "backend": "kimodo",
+      "model": "Kimodo-SOMA-RP-v1.1",
+      "precision": "tf32",
+      "steps": 25,
+      "new_frames": 60,
+      "history": 5,
+      "humans": 16,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "refill",
+        0.5
+      ]
+    },
+    {
+      "name": "kimodo_2s_s100",
+      "backend": "kimodo",
+      "model": "Kimodo-SOMA-RP-v1.1",
+      "precision": "tf32",
+      "steps": 100,
+      "new_frames": 60,
+      "history": 5,
+      "humans": 16,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill"
+      ]
+    },
+    {
+      "name": "kimodo_2s_s10",
+      "backend": "kimodo",
+      "model": "Kimodo-SOMA-RP-v1.1",
+      "precision": "tf32",
+      "steps": 10,
+      "new_frames": 60,
+      "history": 5,
+      "humans": 16,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill"
+      ]
+    },
+    {
+      "name": "kimodo_1s_s25",
+      "backend": "kimodo",
+      "model": "Kimodo-SOMA-RP-v1.1",
+      "precision": "tf32",
+      "steps": 25,
+      "new_frames": 30,
+      "history": 5,
+      "humans": 16,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill"
+      ]
+    },
+    {
+      "name": "kimodo_5s_s25",
+      "backend": "kimodo",
+      "model": "Kimodo-SOMA-RP-v1.1",
+      "precision": "tf32",
+      "steps": 25,
+      "new_frames": 150,
+      "history": 5,
+      "humans": 16,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill",
+        1.0
+      ]
+    },
+    {
+      "name": "kimodo_2s_s25_post",
+      "backend": "kimodo",
+      "model": "Kimodo-SOMA-RP-v1.1",
+      "precision": "tf32",
+      "steps": 25,
+      "new_frames": 60,
+      "history": 5,
+      "post_processing": true,
+      "humans": 16,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill"
+      ]
+    }
+  ],
+  "ardy_fast": [
+    {
+      "name": "ardy_h40_nocfg_s5",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "precision": "tf32",
+      "cfg_type": "nocfg",
+      "steps": 5,
+      "history": 4,
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "refill",
+        0.5,
+        1.0
+      ]
+    },
+    {
+      "name": "ardy_h40_nocfg_s2",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "precision": "tf32",
+      "cfg_type": "nocfg",
+      "steps": 2,
+      "history": 4,
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "refill",
+        0.5,
+        1.0
+      ]
+    },
+    {
+      "name": "ardy_h8_future40_nocfg_s5",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon8",
+      "precision": "tf32",
+      "cfg_type": "nocfg",
+      "steps": 5,
+      "history": 4,
+      "future": 40,
+      "humans": 32,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90",
+        "turn180",
+        "speed_step"
+      ],
+      "periods": [
+        "refill"
+      ]
+    },
+    {
+      "name": "ardy_h40_nocfg_s5_long",
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "precision": "tf32",
+      "cfg_type": "nocfg",
+      "steps": 5,
+      "history": 4,
+      "humans": 32,
+      "duration": 60.0,
+      "scenarios": [
+        "cruise"
+      ],
+      "periods": [
+        "refill",
+        0.5
+      ],
+      "branch_check": false
+    }
+  ],
+  "jitter": [
+    {
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "history": 4,
+      "humans": 32,
+      "duration": 12.0,
+      "name": "j_ardy_h40_nocfg_s5",
+      "precision": "tf32",
+      "cfg_type": "nocfg",
+      "steps": 5,
+      "scenarios": [
+        "stop_start",
+        "turn90",
+        "speed_step"
+      ],
+      "periods": [
+        "refill",
+        1.0,
+        0.5
+      ],
+      "branch_check": false
+    },
+    {
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "history": 4,
+      "humans": 32,
+      "duration": 12.0,
+      "name": "j_ardy_h40_sep_s10",
+      "precision": "tf32",
+      "cfg_type": "separated",
+      "steps": 10,
+      "scenarios": [
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill",
+        0.5
+      ],
+      "branch_check": false
+    },
+    {
+      "backend": "ardy",
+      "model": "ARDY-Core-RP-20FPS-Horizon40",
+      "history": 4,
+      "humans": 32,
+      "duration": 12.0,
+      "name": "j_ardy_h40_nocfg_s5_bf16",
+      "precision": "bf16",
+      "cfg_type": "nocfg",
+      "steps": 5,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill",
+        0.5
+      ]
+    },
+    {
+      "name": "j_kimodo_2s_s25",
+      "backend": "kimodo",
+      "model": "Kimodo-SOMA-RP-v1.1",
+      "precision": "tf32",
+      "steps": 25,
+      "new_frames": 60,
+      "history": 5,
+      "humans": 16,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill"
+      ],
+      "branch_check": false
+    },
+    {
+      "name": "j_kimodo_2s_s25_blend5",
+      "backend": "kimodo",
+      "model": "Kimodo-SOMA-RP-v1.1",
+      "precision": "tf32",
+      "steps": 25,
+      "new_frames": 60,
+      "history": 5,
+      "seam_blend_frames": 5,
+      "humans": 16,
+      "duration": 12.0,
+      "scenarios": [
+        "cruise",
+        "stop_start",
+        "turn90"
+      ],
+      "periods": [
+        "refill"
+      ],
+      "branch_check": false
+    }
+  ]
+}
