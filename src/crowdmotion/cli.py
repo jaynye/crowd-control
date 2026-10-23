@@ -29,6 +29,8 @@ COMMANDS: dict[str, dict[str, tuple[str, str, tuple[str, ...]]]] = {
   },
   "behavior": {
     "evaluate": ("crowdmotion.iterate.evaluate", "plaza rollouts on a saved graph: traces and metrics", ()),
+    "diagnose": ("crowdmotion.iterate.diagnose", "saved-motion seams, command response and progress diagnostics", ()),
+    "probe": ("crowdmotion.iterate.probe", "paired 90/180-degree response probes on the saved graph", ()),
     "render": ("crowdmotion.viz.replay", "replay a saved evaluation as a MuJoCo video", ()),
     "compare": ("crowdmotion.iterate.compare", "paired seed metrics and a review page", ()),
   },

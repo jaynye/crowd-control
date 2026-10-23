@@ -21,6 +21,15 @@ from crowdmotion.core.rundir import RunDir
 from crowdmotion.metrics.behavior import PAIRED_METRICS
 from crowdmotion.viz.html import render_template
 
+STANDOFF_METRICS = (
+  "pair_standoffs.per_human_minute", "pair_standoffs.duration_s_p50_p95", "pair_standoffs.duration_s_max",
+  "pair_stalls_including_maneuvers.per_human_minute", "pair_stalls_including_maneuvers.duration_s_p50_p95",
+  "pair_stalls_including_maneuvers.duration_s_max", "pending_goal_stops.duration_s_p50_p95",
+  "stopped_pending_goal_s_per_human_minute", "mean_speed_mps", "goal_arrivals_per_human_minute",
+  "threat_encounters.resolution_s_p50_p95", "threat_encounters.censored_at_end",
+  "threat_encounters.either_deviates_percent", "threat_encounters.neither_deviates_percent",
+)
+
 
 def _fmt(value) -> str:
   if value is None:
@@ -39,6 +48,13 @@ def paired_rows(baseline: Path, candidate: Path, seeds) -> list[dict]:
       x, y = left[metric], right[metric]
       delta = None if x is None or y is None else (np.asarray(y) - np.asarray(x)).tolist()
       rows.append({"seed": seed, "metric": metric, "baseline": x, "candidate": y, "delta": delta})
+    if "standoffs" in left and "standoffs" in right:
+      for metric in STANDOFF_METRICS:
+        x, y = left["standoffs"], right["standoffs"]
+        for key in metric.split("."):
+          x, y = x[key], y[key]
+        delta = None if x is None or y is None else (np.asarray(y) - np.asarray(x)).tolist()
+        rows.append({"seed": seed, "metric": f"standoffs.{metric}", "baseline": x, "candidate": y, "delta": delta})
   return rows
 
 

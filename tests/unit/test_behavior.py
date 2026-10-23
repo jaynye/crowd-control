@@ -120,7 +120,7 @@ def test_toy_evaluation_trace_and_paired_comparison(tmp_path, monkeypatch):
   config.write_text(json.dumps({"humans": 2, "seconds": 0.45, "seeds": [0]}))
   run = tmp_path / "run"
   args = argparse.Namespace(
-    config=config, out=run, graph=graph_path, device="cpu", threads=1
+    config=config, out=run, graph=graph_path, device="cpu", threads=1, standoffs=True
   )
   evaluation.evaluate(args)
   trace = np.load(run / "seed_0.npz")
@@ -132,6 +132,7 @@ def test_toy_evaluation_trace_and_paired_comparison(tmp_path, monkeypatch):
   compare = tmp_path / "compare"
   comparison.compare(argparse.Namespace(baseline=run, candidate=run, out=compare))
   rows = json.loads((compare / "comparison.json").read_text())["paired_metrics"]
+  assert any(r["metric"] == "standoffs.pair_standoffs.per_human_minute" for r in rows)
   assert all(r["delta"] is None or np.allclose(r["delta"], 0) for r in rows)
   assert (compare / "index.html").exists()
   with pytest.raises(FileExistsError):

@@ -17,6 +17,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from crowdmotion.behavior.designs import scene_section
 from crowdmotion.core.geometry import motion_to_mujoco
 from crowdmotion.core.provenance import environment, file_sha256
 from crowdmotion.core.rundir import write_json
@@ -25,7 +26,7 @@ from crowdmotion.sim.scene import replay_spec, set_camera
 
 
 def replay_scene(skeleton, humans, steering):
-  """Compiled MuJoCo replay scene for a resolved steering config (see `sim.scene`)."""
+  """Compiled MuJoCo replay scene for a design's resolved scene section (see `sim.scene`)."""
   return replay_spec(steering["half_x"], steering["half_z"], steering["obstacles"], skeleton, humans).compile()
 
 
@@ -50,12 +51,18 @@ def render(args):
     saved["meta"], torch.tensor(saved["rest_joints"])
   )
   model = replay_scene(
-    skeleton, manifest["config"]["humans"], manifest["config"]["steering"]
+    skeleton, manifest["config"]["humans"], scene_section(manifest["config"])
   )
   model.vis.global_.offwidth, model.vis.global_.offheight = args.width, args.height
   data = mujoco.MjData(model)
   camera = mujoco.MjvCamera()
   set_camera(camera, args.view)
+  for key in ("azimuth", "elevation"):
+    value = getattr(args, key, None)
+    if value is not None:
+      if not np.isfinite(value):
+        raise ValueError(f"Camera {key} must be finite")
+      setattr(camera, key, value)
   render_info = {
     "status": "running",
     "evaluation": str(args.run.resolve()),
@@ -65,6 +72,8 @@ def render(args):
     "fps": args.fps,
     "width": args.width,
     "height": args.height,
+    "camera_azimuth": camera.azimuth,
+    "camera_elevation": camera.elevation,
     "environment": environment(),
     "trace_sha256": file_sha256(args.run / f"seed_{args.seed}.npz"),
     "scope": "MuJoCo capsule replay of saved motion; no graph, prior or LiDAR.",
@@ -150,6 +159,8 @@ def main(argv=None) -> None:
   parser.add_argument("--out", type=Path)
   parser.add_argument("--view", choices=("overview", "follow", "top"), default="overview")
   parser.add_argument("--human", type=int, default=0)
+  parser.add_argument("--azimuth", type=float, help="override camera azimuth in degrees")
+  parser.add_argument("--elevation", type=float, help="override camera elevation in degrees (negative looks down)")
   parser.add_argument("--fps", type=int, default=20)
   parser.add_argument("--width", type=int, default=960)
   parser.add_argument("--height", type=int, default=540)

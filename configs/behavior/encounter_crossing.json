@@ -1,0 +1,91 @@
+{
+  "description": "Encounter probe: two humans cross at 90 degrees, timed to meet near the center (fixed waypoints, no waits).",
+  "design": "encounter",
+  "humans": 2,
+  "seconds": 10.0,
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "graph_overrides": {
+    "neighbors": 128,
+    "vel_weight": 0.1,
+    "pose_weight": 1.0,
+    "temperature": 0.01,
+    "inertialize": true,
+    "correct_yaw_deg": 5.0,
+    "correct_speed": 0.1,
+    "hunch_ratio": 0.85,
+    "end_vel_weight": 0.25,
+    "lookahead": false,
+    "facing_weight": 1.5,
+    "heading_weight": 1.0,
+    "heading_deadband_deg": 5.0,
+    "vertical_mask": true,
+    "vertical_pelvis_range_m": 0.15,
+    "vertical_foot_min_m": 0.12,
+    "vertical_foot_max_m": 0.6,
+    "posture_enabled": true,
+    "posture_weight": 0.3,
+    "posture_cutoff_deg": 15.0,
+    "posture_target_margin_deg": 10.0,
+    "posture_initial_hunched": 0.1,
+    "posture_upright_to_hunched_rate": 0.005,
+    "posture_hunched_to_upright_rate": 0.02,
+    "vertical_lowest_foot_max_m": 0.12,
+    "turn_weight": 1.0,
+    "turn_preserve_yaw": true,
+    "clearance_weight": 20.0
+  },
+  "encounter": {
+    "half_x": 7.0,
+    "half_z": 5.0,
+    "wall_margin_m": 0.8,
+    "obstacles": [
+      [
+        -6.0,
+        0.0,
+        0.3
+      ]
+    ],
+    "conditioning": "waypoints",
+    "wait_probability": 0.0,
+    "loop_waypoints": false,
+    "speed_range": [
+      1.2,
+      1.2
+    ],
+    "starts": [
+      [
+        -4.0,
+        0.0,
+        90.0
+      ],
+      [
+        0.0,
+        -4.0,
+        0.0
+      ]
+    ],
+    "waypoints": [
+      [
+        [
+          4.5,
+          0.0
+        ]
+      ],
+      [
+        [
+          0.0,
+          4.0
+        ]
+      ]
+    ]
+  }
+}

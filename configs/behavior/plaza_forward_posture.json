@@ -1,0 +1,90 @@
+{
+  "description": "Plaza design (random goals, continuous avoidance) with forward steering, the flat-ground mask and sticky posture: the 2026-10-05 development candidate. Development seeds only; not human calibration.",
+  "humans": 16,
+  "seconds": 20.0,
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "graph_overrides": {
+    "neighbors": 128,
+    "vel_weight": 0.1,
+    "pose_weight": 1.0,
+    "temperature": 0.01,
+    "inertialize": true,
+    "correct_yaw_deg": 5.0,
+    "correct_speed": 0.1,
+    "hunch_ratio": 0.85,
+    "end_vel_weight": 0.25,
+    "lookahead": false,
+    "facing_weight": 1.5,
+    "heading_weight": 1.0,
+    "heading_deadband_deg": 5.0,
+    "vertical_mask": true,
+    "vertical_pelvis_range_m": 0.15,
+    "vertical_foot_min_m": 0.12,
+    "vertical_foot_max_m": 0.6,
+    "posture_enabled": true,
+    "posture_weight": 0.3,
+    "posture_cutoff_deg": 15.0,
+    "posture_target_margin_deg": 10.0,
+    "posture_initial_hunched": 0.1,
+    "posture_upright_to_hunched_rate": 0.005,
+    "posture_hunched_to_upright_rate": 0.02,
+    "vertical_lowest_foot_max_m": 0.12
+  },
+  "steering": {
+    "half_x": 7.0,
+    "half_z": 5.0,
+    "speed_range": [
+      0.8,
+      1.6
+    ],
+    "wait_probability": 0.3,
+    "wait_s": [
+      1.5,
+      4.0
+    ],
+    "arrive_m": 0.6,
+    "personal_m": 1.2,
+    "horizon_s": 3.0,
+    "avoid_gain": 3.0,
+    "contact_m": 1.2,
+    "wall_margin_m": 0.8,
+    "obstacles": [
+      [
+        -6.0,
+        0.0,
+        0.3
+      ]
+    ],
+    "committed_turns": false,
+    "turn_angles_deg": [
+      45.0,
+      60.0,
+      90.0,
+      135.0,
+      180.0
+    ],
+    "turn_weights": [
+      0.15,
+      0.2,
+      0.5,
+      0.1,
+      0.05
+    ],
+    "turn_jitter_deg": 10.0,
+    "turn_walk_s": [
+      4.0,
+      12.0
+    ],
+    "turn_lead_deg": 25.0,
+    "turn_speed_scale": 0.7,
+    "turn_finish_deg": 10.0,
+    "forward_steering": true,
+    "forward_lead_deg": 30.0,
+    "forward_speed_floor": 0.8,
+    "relax_orientation_for_avoidance": true
+  }
+}
