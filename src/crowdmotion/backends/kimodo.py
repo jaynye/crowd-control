@@ -128,6 +128,8 @@ class KimodoBackend:
 
   @torch.no_grad()
   def generate(self, req: MotionRequest) -> MotionChunk:
+    if req.root_heading is not None:
+      raise NotImplementedError("Kimodo heading targets are not wired; root_heading is supported by ARDY only")
     m = self.model
     rep = m.motion_rep
     batch = req.batch

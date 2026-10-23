@@ -17,6 +17,7 @@ import sys
 COMMANDS: dict[str, dict[str, tuple[str, str, tuple[str, ...]]]] = {
   "library": {
     "generate": ("crowdmotion.library.generate", "generate an offline ARDY motion library", ()),
+    "turns": ("crowdmotion.library.turns", "turn tracking, feet and ground checks of a turning library", ()),
   },
   "graph": {
     "build": ("crowdmotion.graph.build", "build a motion graph from a library and save it", ()),

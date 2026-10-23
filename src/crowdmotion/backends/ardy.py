@@ -109,21 +109,50 @@ class ArdyBackend:
     return empty_text(batch, self.device)
 
   # Conditions ---------------------------------------------------------------
-  def conditions(self, root_path, history_frames: int, num_frames: int, batch: int):
-    """Normalized `(motion_mask, observed_motion)` for a world XZ root path."""
+  def conditions(self, root_path, history_frames: int, num_frames: int, batch: int, root_heading=None):
+    """Normalized `(motion_mask, observed_motion)` for a world XZ root path and, when
+    `root_heading [B, F]` is given, world body-heading targets on the same frames.
+
+    Headings constrain the `global_root_heading` feature to `[cos h, sin h]` (0 faces
+    +Z, positive toward +X, as `rep.get_root_heading_angle` reads it back). NaN
+    heading frames stay unconstrained. Without headings the result is unchanged.
+    NaN path frames (vectorized conditions only) leave the root position free there.
+    """
     if root_path is None:
+      if root_heading is not None:
+        raise ValueError("root_heading needs a root_path for the same frames")
       return None, None
     rep = self.model.motion_rep
     n = min(root_path.shape[1], num_frames - history_frames)
+    if root_heading is not None:
+      if root_heading.shape[:2] != root_path.shape[:2]:
+        raise ValueError(f"root_heading {tuple(root_heading.shape)} must match root_path {tuple(root_path.shape[:2])}")
+      root_heading = root_heading.to(root_path.device, root_path.dtype)
     if self.conditions_mode == "library":
       from ardy.constraints import Root2DConstraintSet
+
+      if not torch.isfinite(root_path[:, :n]).all():
+        raise ValueError("library conditions need a finite root path; use vectorized conditions for sparse paths")
 
       frames = torch.arange(history_frames, history_frames + n)
       masks, observed = [], []
       for b in range(batch):
-        constraint = Root2DConstraintSet(self.model.skeleton, frames, root_path[b, :n])
+        ok = None if root_heading is None else torch.isfinite(root_heading[b, :n])
+        if ok is None or not ok.any():
+          constraints = [Root2DConstraintSet(self.model.skeleton, frames, root_path[b, :n])]
+        elif ok.all():
+          constraints = [Root2DConstraintSet(self.model.skeleton, frames, root_path[b, :n],
+                                             global_root_heading=root_heading[b, :n])]
+        else:
+          # Disjoint frame sets: path only where the heading is NaN, path and heading elsewhere.
+          okc = ok.cpu()
+          constraints = [
+            Root2DConstraintSet(self.model.skeleton, frames[~okc], root_path[b, :n][~ok]),
+            Root2DConstraintSet(self.model.skeleton, frames[okc], root_path[b, :n][ok],
+                                global_root_heading=root_heading[b, :n][ok]),
+          ]
         obs, mask = rep.create_conditions_from_constraints(
-          [constraint], length=num_frames, to_normalize=False, device=self.device
+          constraints, length=num_frames, to_normalize=False, device=self.device
         )
         observed.append(rep.normalize(obs) * mask)
         masks.append(mask)
@@ -133,10 +162,28 @@ class ArdyBackend:
     obs = torch.zeros(batch, num_frames, rep.motion_rep_dim, device=self.device)
     mask = torch.zeros_like(obs)
     window = slice(history_frames, history_frames + n)
-    obs[:, window, x] = root_path[:, :n, 0]
-    obs[:, window, z] = root_path[:, :n, 1]
-    mask[:, window, x] = 1.0
-    mask[:, window, z] = 1.0
+    path = root_path[:, :n]
+    if torch.isfinite(path).all():
+      obs[:, window, x] = path[..., 0]
+      obs[:, window, z] = path[..., 1]
+      mask[:, window, x] = 1.0
+      mask[:, window, z] = 1.0
+    else:  # sparse path: NaN frames are free
+      okp = torch.isfinite(path).all(-1)
+      path = torch.where(okp[..., None], path, torch.zeros_like(path))
+      obs[:, window, x] = path[..., 0]
+      obs[:, window, z] = path[..., 1]
+      mask[:, window, x] = okp.float()
+      mask[:, window, z] = okp.float()
+    if root_heading is not None:
+      hs = rep.slice_dict["global_root_heading"].start
+      h = root_heading[:, :n].to(self.device)
+      ok = torch.isfinite(h)
+      h = torch.where(ok, h, torch.zeros_like(h))  # NaN * 0 would stay NaN
+      obs[:, window, hs] = torch.where(ok, torch.cos(h), torch.zeros_like(h))
+      obs[:, window, hs + 1] = torch.where(ok, torch.sin(h), torch.zeros_like(h))
+      mask[:, window, hs] = ok.float()
+      mask[:, window, hs + 1] = ok.float()
     return mask, rep.normalize(obs) * mask
 
   # Generation ---------------------------------------------------------------
@@ -154,7 +201,7 @@ class ArdyBackend:
     timer = StageTimer(self.timing)
     with tf32_matmul(self.precision == "tf32"):
       with timer.stage("conditions"):
-        motion_mask, observed = self.conditions(req.root_path, hist_len, num_frames, batch)
+        motion_mask, observed = self.conditions(req.root_path, hist_len, num_frames, batch, req.root_heading)
       with timer.stage("noise"):
         noise = per_human_noise(
           req.seeds, req.counters, (horizon // nfpt, self.token_dim), self.device
