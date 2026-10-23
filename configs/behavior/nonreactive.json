@@ -1,0 +1,90 @@
+{
+  "description": "Independent graph walkers: humans ignore one another and the robot, including stop, separation and graph clearance. They retain ordinary turns, boundaries and the same motion-quality preferences.",
+  "design": "encounter",
+  "humans": 16,
+  "seconds": 20,
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "graph_overrides": {
+    "neighbors": 128,
+    "vel_weight": 0.1,
+    "pose_weight": 1.0,
+    "temperature": 0.01,
+    "inertialize": true,
+    "correct_yaw_deg": 5.0,
+    "correct_speed": 0.1,
+    "hunch_ratio": 0.85,
+    "end_vel_weight": 2.0,
+    "lookahead": false,
+    "facing_weight": 3.0,
+    "heading_weight": 1.0,
+    "heading_deadband_deg": 5.0,
+    "vertical_mask": true,
+    "vertical_pelvis_range_m": 0.15,
+    "vertical_foot_min_m": 0.12,
+    "vertical_foot_max_m": 0.6,
+    "posture_enabled": true,
+    "posture_weight": 0.3,
+    "posture_cutoff_deg": 15.0,
+    "posture_target_margin_deg": 10.0,
+    "posture_initial_hunched": 0.1,
+    "posture_upright_to_hunched_rate": 0.005,
+    "posture_hunched_to_upright_rate": 0.02,
+    "vertical_lowest_foot_max_m": 0.12,
+    "turn_weight": 1.0,
+    "turn_preserve_yaw": true,
+    "clearance_weight": 60.0,
+    "twist_mask": true,
+    "twist_max_foot_yaw_deg": 21.4
+  },
+  "encounter": {
+    "half_x": 7.0,
+    "half_z": 5.0,
+    "wall_margin_m": 0.8,
+    "obstacles": [
+      [
+        -6.0,
+        0.0,
+        0.3
+      ]
+    ],
+    "conditioning": "random_waypoints",
+    "stubborn_fraction": 0.05,
+    "nonstubborn_assertiveness_range": [
+      0.0,
+      0.35
+    ],
+    "stall_recovery_s": 0.8,
+    "retain_avoidance_heading": true,
+    "minimal_avoidance": true,
+    "body_radius_m": 0.4,
+    "strategy_far": [
+      0.05,
+      0.65,
+      0.15,
+      0.15
+    ],
+    "strategy_near": [
+      0.05,
+      0.25,
+      0.6,
+      0.1
+    ],
+    "pass_commitment_s": 3.0,
+    "prefer_right": 1.0,
+    "side_noise": 0.0,
+    "pass_commitment_jitter": 0.75,
+    "pass_margin_m": 0.2,
+    "robot_radius_m": 0.3,
+    "robot_oblivious_fraction": 0.05,
+    "robot_stubborn_fraction": 0.1,
+    "robot_assertiveness_range": [
+      0.0,
+      0.35
+    ],
+    "reactive": false
+  }
+}

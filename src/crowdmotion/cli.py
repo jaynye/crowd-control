@@ -53,12 +53,15 @@ COMMANDS: dict[str, dict[str, tuple[str, str, tuple[str, ...]]]] = {
     "body-geometry": ("crowdmotion.bench.body_geometry", "LiDAR cost and fidelity of human body geometries", ()),
   },
   "train": {
+    "navigation-ablations": ("crowdmotion.sim.mjlab.ablate_navigation", "plan/submit matched goal-navigation ablations", ()),
+    "navigation-arm": ("crowdmotion.sim.mjlab.ablate_navigation", "dispatch a frozen ablation arm", ("dispatch",)),
     "traversal": ("crowdmotion.sim.mjlab.train", "train the crowd traversal policy (G1, LiDAR, graph crowd)", ()),
   },
   "play": {
     "traversal": ("crowdmotion.sim.mjlab.play", "watch a trained traversal policy in a viewer or render it to MP4", ()),
   },
   "eval": {
+    "navigation": ("crowdmotion.sim.mjlab.evaluate_navigation", "evaluate a navigation arm on its fixed behavior grid", ()),
     "traversal": ("crowdmotion.sim.mjlab.evaluate", "measure traversal policies: command following, collisions, falls",
                   ()),
   },

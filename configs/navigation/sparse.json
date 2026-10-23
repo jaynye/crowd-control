@@ -1,0 +1,16 @@
+{
+  "reward_mode": "sparse",
+  "gamma_per_s": 0.99,
+  "gae_lambda_per_s": 0.95,
+  "rollout_s": 16,
+  "deadline_s": 30.0,
+  "min_goal_m": 4.0,
+  "max_goal_m": 8.0,
+  "speed_mps": 0.8,
+  "success_reward": 10.0,
+  "time_bonus": 2.0,
+  "failure_reward": 0.0,
+  "potential_weight": 1.0,
+  "action_l2": 0.01,
+  "action_rate": 0.02
+}
