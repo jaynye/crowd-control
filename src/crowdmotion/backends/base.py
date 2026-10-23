@@ -33,6 +33,9 @@ class MotionRequest:
   text_feat: `[B, L, 4096]` cached prompt embeddings (zeros = empty prompt).
   root_path: `[B, F, 2]` world XZ targets for the F frames after the history
     (native frame rate), or None for no path constraint.
+  root_heading: `[B, F]` world body-heading targets (radians, 0 faces +Z, positive
+    toward +X) for the same frames as `root_path`; NaN leaves a frame unconstrained.
+    None (the default) constrains no heading. Only ARDY supports it.
   seeds, counters: `[B]` int64 per-human stream id and draw counter.
   start_xz, start_heading: `[B, 2]`, `[B]` for fresh starts only.
   """
@@ -44,6 +47,7 @@ class MotionRequest:
   root_path: torch.Tensor | None = None
   start_xz: torch.Tensor | None = None
   start_heading: torch.Tensor | None = None
+  root_heading: torch.Tensor | None = None
 
   @property
   def batch(self) -> int:

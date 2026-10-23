@@ -99,6 +99,12 @@ class MotionGraph:
     ).flatten()
     self.rest_joints = None
     build_candidates(self)
+    self.annotations = None
+    self.twist_annotations = None
+    if cfg.vertical_mask or cfg.posture_enabled:
+      self.ensure_annotations()
+    if cfg.twist_mask:
+      self.ensure_twist_annotations()
 
   # Persistence ------------------------------------------------------------------
   def save(self, path, rest_joints: torch.Tensor | None = None) -> None:
@@ -151,7 +157,45 @@ class MotionGraph:
     for name, t in blob["tables"].items():
       t = t.float() if name in cls._HALF else (t.long() if name == "cand" else t)
       setattr(self, name, t.to(self.device))
+    self.annotations = None
+    self.twist_annotations = None
+    if cfg.vertical_mask or cfg.posture_enabled:
+      self.ensure_annotations()
+    if cfg.twist_mask:
+      self.ensure_twist_annotations()
     return self
+
+  def ensure_annotations(self):
+    """Load-time derived measurements, cached separately from persisted tables."""
+    if self.annotations is None:
+      from crowdmotion.graph.annotations import annotate_edges
+      self.annotations = annotate_edges(self)
+    return self.annotations
+
+  def ensure_twist_annotations(self):
+    """Derived once from saved poses and contacts; thresholds remain live."""
+    if self.twist_annotations is None:
+      from crowdmotion.graph.annotations import annotate_twist
+      self.twist_annotations = annotate_twist(self)
+    return self.twist_annotations
+
+  def admissible_edges(self, cfg: GraphConfig | None = None) -> torch.Tensor:
+    """Live flat-ground/twist masks; thresholds never mutate saved validity."""
+    c = self.cfg if cfg is None else cfg
+    allowed = self.valid
+    if c.vertical_mask:
+      a = self.ensure_annotations()
+      allowed = (allowed & (a.pelvis_range_m <= c.vertical_pelvis_range_m)
+                 & (a.lowest_foot_min_m <= c.vertical_foot_min_m)
+                 & (a.foot_max_m <= c.vertical_foot_max_m))
+      if c.vertical_lowest_foot_max_m > 0:
+        allowed = allowed & (a.lowest_foot_max_m <= c.vertical_lowest_foot_max_m)
+    if c.twist_mask:
+      if not 0 <= c.twist_max_foot_yaw_deg <= 180:
+        raise ValueError("twist_max_foot_yaw_deg must lie in [0, 180]")
+      a = self.ensure_twist_annotations()
+      allowed = allowed & ~(a.all_feet_planted & (a.foot_yaw_deg > c.twist_max_foot_yaw_deg))
+    return allowed
 
   # Skeleton and starts ----------------------------------------------------------
   @property
@@ -167,11 +211,34 @@ class MotionGraph:
       "neutral_head_height": self.meta["neutral_head_height"],
     }
 
-  def start_boundaries(self, seeds: torch.Tensor, max_speed: float = 0.15) -> torch.Tensor:
+  def start_boundaries(self, seeds: torch.Tensor, max_speed: float = 0.15,
+                       posture_hunched: torch.Tensor | None = None) -> torch.Tensor:
     """A near-standing boundary per human, drawn from its own stream."""
-    pool = torch.nonzero(self.valid & (self.root_speed < max_speed)).squeeze(1)
+    valid = self.admissible_edges() if self.cfg.vertical_mask or self.cfg.twist_mask else self.valid
+    if posture_hunched is not None:
+      a = self.ensure_annotations()
+      edge_class = a.trunk_pitch_deg >= self.cfg.posture_cutoff_deg
+      start_class = a.start_pitch_deg >= self.cfg.posture_cutoff_deg
+      result = torch.empty_like(seeds, device=self.device)
+      for hunched in (False, True):
+        rows = posture_hunched == hunched
+        if not rows.any():
+          continue
+        eligible = valid & (edge_class == hunched) & (start_class == hunched)
+        pool = torch.nonzero(eligible & (self.root_speed < max_speed)).squeeze(1)
+        if not pool.numel():
+          pool = torch.nonzero(eligible).squeeze(1)
+        if not pool.numel():
+          raise ValueError(f"No admissible start boundaries for posture hunched={hunched}")
+        sub = seeds[rows].to(self.device)
+        u = hash_uniform(sub, torch.full_like(sub, -1), 1)[:, 0]
+        result[rows] = pool[(u * pool.numel()).long().clamp(max=pool.numel() - 1)]
+      return result
+    pool = torch.nonzero(valid & (self.root_speed < max_speed)).squeeze(1)
     if pool.numel() == 0:
-      pool = torch.nonzero(self.valid).squeeze(1)
+      pool = torch.nonzero(valid).squeeze(1)
+    if pool.numel() == 0:
+      raise ValueError("No admissible graph start boundaries; relax the edge masks")
     u = hash_uniform(seeds.to(self.device), torch.full_like(seeds, -1).to(self.device), 1)[:, 0]
     return pool[(u * pool.numel()).long().clamp(max=pool.numel() - 1)]
 

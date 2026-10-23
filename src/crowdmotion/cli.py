@@ -21,7 +21,9 @@ COMMANDS: dict[str, dict[str, tuple[str, str, tuple[str, ...]]]] = {
   "graph": {
     "build": ("crowdmotion.graph.build", "build a motion graph from a library and save it", ()),
     "report": ("crowdmotion.viz.report", "audit a saved graph and write an HTML report", ()),
+    "edge-review": ("crowdmotion.viz.edge_review", "audit posture and ground heights with saved-edge contact sheets", ()),
     "speed": ("crowdmotion.bench.graph_speed", "time graph stepping for a training population", ()),
+    "turns": ("crowdmotion.graph.turns", "turning-radius coverage of a saved graph under a flat-ground mask", ()),
   },
   "behavior": {
     "evaluate": ("crowdmotion.iterate.evaluate", "plaza rollouts on a saved graph: traces and metrics", ()),

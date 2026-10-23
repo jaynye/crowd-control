@@ -78,13 +78,19 @@ class GraphMotionSource:
       pose=torch.zeros(humans, self.graph.joints_n, 3, device=dev),
       seeds=torch.zeros(humans, dtype=torch.long, device=dev),
       counters=torch.zeros(humans, dtype=torch.long, device=dev),
+      posture_hunched=torch.zeros(humans, dtype=torch.bool, device=dev),
+      posture_seeds=torch.zeros(humans, dtype=torch.long, device=dev),
+      root_velocity=torch.zeros(humans, 2, device=dev),
     )
 
-  def step(self, state, path: torch.Tensor) -> MotionStep:
+  def step(self, state, path: torch.Tensor, *, orientation_weight: torch.Tensor | None = None,
+           turn_target: torch.Tensor | None = None, turn_active: torch.Tensor | None = None,
+           neighbors: tuple | None = None) -> MotionStep:
     if self.timed:
       synchronize(self.runtime.device)
       t0 = time.perf_counter()
-    out = self.runtime.step(state, path)
+    out = self.runtime.step(state, path, orientation_weight=orientation_weight,
+                            turn_target=turn_target, turn_active=turn_active, neighbors=neighbors)
     if self.timed:
       synchronize(self.runtime.device)
       out["call_wall_s"] = time.perf_counter() - t0
@@ -104,15 +110,17 @@ class GraphMotionSource:
 
   @staticmethod
   def select(state, rows: torch.Tensor):
-    return type(state)(*(getattr(state, n)[rows] for n in _GRAPH_FIELDS))
+    return type(state)(*(None if getattr(state, n) is None else getattr(state, n)[rows] for n in _GRAPH_FIELDS))
 
   @staticmethod
   def put(state, rows: torch.Tensor, sub) -> None:
     for name in _GRAPH_FIELDS:
-      getattr(state, name)[rows] = getattr(sub, name)
+      if getattr(sub, name) is not None:
+        getattr(state, name)[rows] = getattr(sub, name)
 
 
-_GRAPH_FIELDS = ("boundary", "root_xz", "heading", "pose", "seeds", "counters")
+_GRAPH_FIELDS = ("boundary", "root_xz", "heading", "pose", "seeds", "counters", "posture_hunched", "posture_seeds",
+                 "root_velocity")
 
 
 @dataclass
@@ -152,8 +160,12 @@ class OnlineMotionSource:
     )
 
   def request(self, state: OnlineState, path: torch.Tensor | None,
-              history_frames: int | None = None) -> MotionRequest:
-    """The next request; `history_frames` overrides the source's history length."""
+              history_frames: int | None = None, root_heading: torch.Tensor | None = None) -> MotionRequest:
+    """The next request; `history_frames` overrides the source's history length.
+
+    root_heading: optional `[H, F]` world body-heading targets for the path's frames
+    (NaN = unconstrained frame); backends that cannot follow headings reject it.
+    """
     n = self.history_frames if history_frames is None else history_frames
     hist = None
     if n and state.features is not None:
@@ -163,7 +175,7 @@ class OnlineMotionSource:
     return MotionRequest(
       text_feat=state.text, seeds=state.seeds, counters=state.counters.clone(), history=hist,
       root_path=path, start_xz=None if hist is not None else state.start_xz,
-      start_heading=None if hist is not None else state.start_heading,
+      start_heading=None if hist is not None else state.start_heading, root_heading=root_heading,
     )
 
   def generate(self, req: MotionRequest) -> MotionStep:
@@ -177,8 +189,13 @@ class OnlineMotionSource:
     step.extras["call_wall_s"] = time.perf_counter() - t0
     return step
 
-  def step(self, state: OnlineState, path: torch.Tensor | None) -> MotionStep:
-    return self.generate(self.request(state, path))
+  def step(self, state: OnlineState, path: torch.Tensor | None,
+           *, orientation_weight: torch.Tensor | None = None,
+           turn_target: torch.Tensor | None = None, turn_active: torch.Tensor | None = None,
+           root_heading: torch.Tensor | None = None) -> MotionStep:
+    # Online priors follow the requested path (and heading targets, when given); they
+    # have no graph orientation costs.
+    return self.generate(self.request(state, path, root_heading=root_heading))
 
   resumes_partial = True
 
