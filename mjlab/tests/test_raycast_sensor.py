@@ -6,6 +6,7 @@ import math
 
 import pytest
 import torch
+import warp as wp
 from conftest import get_test_device, make_scene_and_sim
 
 from mjlab.envs.mdp.observations import height_scan
@@ -1242,3 +1243,52 @@ def test_include_geom_groups_out_of_range_raises(groups):
   """Out-of-range geom groups should raise rather than silently exclude."""
   with pytest.raises(ValueError, match="include_geom_groups must be in"):
     _geom_groups_to_vec6(groups)
+
+
+@wp.kernel
+def _virtual_plane(
+  depth: float,
+  geom: int,
+  dist: wp.array2d(dtype=float),
+  geomid: wp.array2d(dtype=int),
+  normal: wp.array2d(dtype=wp.vec3),
+):
+  """A target that hits every even ray at `depth`, keeping nearer stored hits."""
+  w, r = wp.tid()
+  if r % 2 == 0 and (dist[w, r] < 0.0 or depth < dist[w, r]):
+    dist[w, r] = depth
+    geomid[w, r] = geom
+    normal[w, r] = wp.vec3(0.0, 0.0, 1.0)
+
+
+def test_raycast_ray_targets_keep_nearer_hit(robot_with_floor_xml, device):
+  """Registered targets run after the MuJoCo raycast; the nearer hit wins per ray."""
+  cfg = RayCastSensorCfg(
+    name="terrain_scan",
+    frame=ObjRef(type="body", name="base", entity="robot"),
+    pattern=GridPatternCfg(size=(0.5, 0.5), resolution=0.25, direction=(0.0, 0.0, -1.0)),
+    max_distance=10.0,
+  )
+  scene, sim = make_scene_and_sim(device, robot_with_floor_xml, sensors=(cfg,), num_envs=2)
+  sensor = scene["terrain_scan"]
+
+  def plane(depth: float, geom: int):
+    def target(pnt, vec, dist, geomid, normal):
+      wp.launch(_virtual_plane, dim=dist.shape, inputs=[depth, geom],
+                outputs=[dist, geomid, normal], device=dist.device)
+    return target
+
+  sensor.add_ray_target(plane(1.0, 99))  # nearer than the floor (2 m)
+  sensor.add_ray_target(plane(3.0, 98))  # farther: never wins
+  sim.create_graph()
+  sim.step()
+  sim.sense()
+  data = sensor.data
+  even, odd = slice(0, None, 2), slice(1, None, 2)
+  assert torch.allclose(data.distances[:, even], torch.ones_like(data.distances[:, even]))
+  assert torch.all(data.geom_ids[:, even] == 99)
+  assert torch.allclose(data.distances[:, odd], torch.full_like(data.distances[:, odd], 2.0), atol=0.1)
+  assert torch.all(data.geom_ids[:, odd] != 98)
+  expected = torch.zeros_like(data.normals_w[:, even])
+  expected[..., 2] = 1.0
+  assert torch.allclose(data.normals_w[:, even], expected)

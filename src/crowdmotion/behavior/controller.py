@@ -87,7 +87,8 @@ class CrowdController:
     speed, heading = self.commands.command(t, kin, groups)
     path = self.planner(kin.root_xz, kin.vel, speed, heading, self.source.path_frames, self.source.fps)
     state = self.state if rows is None else self.source.select(self.state, rows)
-    motion = self.source.step(state, path)
+    options = self.commands.motion_options() if hasattr(self.commands, "motion_options") else {}
+    motion = self.source.step(state, path, **options)
     n = motion.frames if take is None else min(motion.frames, take)
     if limit is not None:
       n = min(n, limit)

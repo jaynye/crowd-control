@@ -15,7 +15,7 @@ How to test, check and extend the code. The structure itself is described in
 
 | Directory | What | Needs |
 |---|---|---|
-| `tests/unit/` | Core utilities, backend registry, CLI table, graph runtime and cost terms, crowd controller, behavior metrics and evaluation, iteration sessions (mocked scheduler), corridor fixture, layering | Nothing (synthetic library in `tests/synthetic.py`) |
+| `tests/unit/` | Core utilities, backend registry, CLI table, graph runtime and cost terms, crowd controller, behavior metrics and evaluation, iteration sessions (mocked scheduler), corridor fixture, rigid mesh humans, layering | Nothing (synthetic library in `tests/synthetic.py`). The rigid-crowd plaza tests need the `graph-default` and `graph-rotations` artifacts and the Core skin (skipped without them), and also run on CUDA when available |
 | `tests/golden/` | Bit-exact outputs against `tests/golden/expected/` | The saved graph for some cases (skipped without it) |
 | `tests/gpu/` | ARDY and Kimodo adapters against upstream's own calls on the same GPU | CUDA, `source scripts/env.sh`, checkpoints |
 
@@ -103,10 +103,11 @@ Intent (where a human wants to go, waits, turn commitments) lives in
 `behavior/steering.py` (`LocalSteering`). `PlazaBehavior` combines them as the command
 source of both the evaluator and mjlab, so a change reaches both.
 
-`GoalIntent` and `LocalSteering` share one generator and draw in a fixed order to
-reproduce existing baselines. A new random draw changes every later draw: treat it as a
+`GoalIntent` draws from the legacy plaza generator in a fixed order;
+`LocalSteering` is deterministic. A new draw from that generator changes every later draw: treat it as a
 behavior change, evaluate it against a fresh baseline, and do not expect the goldens to
-match. New randomness should come from per-human streams (`core.rng`).
+match. The optional `CommittedTurnIntent` uses separate per-human turn streams
+(`core.rng`) without changing legacy spawning or goal-intent draws.
 
 ### Other extension points
 

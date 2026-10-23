@@ -77,7 +77,7 @@ def row_generator_seed(seed: int, counter: int) -> int:
 
 
 # Per-human stream ids ----------------------------------------------------------
-SEED_SCHEMES = ("quality", "stream", "evaluator", "graphcrowd")
+SEED_SCHEMES = ("quality", "stream", "evaluator", "graphcrowd", "plaza_turn", "graph_posture", "encounter")
 
 
 def human_seeds(
@@ -95,6 +95,12 @@ def human_seeds(
   evaluator:  base * 1_000_003 + ids                  (behavior evaluator)
   graphcrowd: base * 1_000_003 + episode * 1_000_000_007 + ids   (mjlab GraphCrowd;
               `ids` are global human indices env * M + i, `episode` the env's reset count)
+  plaza_turn: graphcrowd formula + 2**61 (optional committed-turn decisions;
+              does not consume or replace the legacy plaza generator)
+  graph_posture: domain-separated hash of already constructed motion stream ids;
+              callers pass base=0, ids=motion_seeds. Does not consume motion RNG.
+  encounter:  domain-separated hash of the graphcrowd formula (encounter behavior
+              decisions, `behavior.encounter`; `ids` are global human indices)
   """
   if scheme == "quality":
     return ids + base * 10_000
@@ -104,4 +110,10 @@ def human_seeds(
     return ids + base * 1_000_003
   if scheme == "graphcrowd":
     return base * 1_000_003 + episode * 1_000_000_007 + ids
+  if scheme == "plaza_turn":
+    return base * 1_000_003 + episode * 1_000_000_007 + ids + 2**61
+  if scheme == "graph_posture":
+    return mix64(ids ^ (base * 1_000_003) ^ 0x50_057) & MASK63
+  if scheme == "encounter":
+    return mix64((base * 1_000_003 + episode * 1_000_000_007 + ids) ^ 0xE7C0_07E5) & MASK63
   raise ValueError(f"unknown seed scheme {scheme!r}; choose from {SEED_SCHEMES}")

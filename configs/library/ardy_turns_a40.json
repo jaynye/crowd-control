@@ -1,0 +1,101 @@
+{
+  "name": "ardy_turns_a40_v1",
+  "description": "Supplementary turning library: ARDY H40 at the library setting (TF32, no guidance, 5 steps), replanned every 8-frame edge under turning commands (stand / walk / in-place turn / arc) with body-heading targets; heading and root path constrained on every 10th planned frame (the 2026-10-06 smoke's sparse variant). 1,024 streams x 32 s = 9.1 h, seed 1 (the base library uses seed 0).",
+  "model": "ARDY-Core-RP-20FPS-Horizon40",
+  "steps": 5,
+  "cfg_type": "nocfg",
+  "precision": "tf32",
+  "history": 4,
+  "edge_frames": 8,
+  "seed": 1,
+  "humans": 1024,
+  "batch": 1024,
+  "duration": 32.0,
+  "command_source": "turns",
+  "commands": {
+    "stand_s": [
+      0.6,
+      2.0
+    ],
+    "walk_s": [
+      1.0,
+      3.0
+    ],
+    "speed_bands": [
+      [
+        0.25,
+        0.3,
+        0.8
+      ],
+      [
+        0.6,
+        0.8,
+        1.5
+      ],
+      [
+        0.15,
+        1.5,
+        2.0
+      ]
+    ],
+    "in_place_deg": [
+      45.0,
+      180.0
+    ],
+    "in_place_rate_deg": [
+      60.0,
+      180.0
+    ],
+    "settle_s": [
+      0.3,
+      0.8
+    ],
+    "arc_radius_m": [
+      0.5,
+      4.0
+    ],
+    "arc_deg": [
+      45.0,
+      180.0
+    ],
+    "arc_max_rate_deg": 120.0,
+    "arc_keep_speed": true,
+    "start": [
+      0.3,
+      0.4,
+      0.3,
+      0.0
+    ],
+    "next_walk": [
+      0.15,
+      0.25,
+      0.1,
+      0.5
+    ],
+    "next_stand": [
+      0.35,
+      0.05,
+      0.6,
+      0.0
+    ],
+    "next_in_place": [
+      0.6,
+      0.2,
+      0.1,
+      0.1
+    ],
+    "next_arc": [
+      0.55,
+      0.15,
+      0.05,
+      0.25
+    ],
+    "heading_targets": true,
+    "walk_heading": true,
+    "stand_heading": true,
+    "forward_speed": 0.5,
+    "blend_s": 0.5,
+    "heading_every": 10,
+    "path_every": 10
+  }
+}

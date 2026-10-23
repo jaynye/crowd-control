@@ -10,6 +10,9 @@ Added
 
 - Added an angular LiDAR ray pattern, minimum range filtering, and hit geometry
   IDs for sensor debugging.
+- Added ``RayCastSensor.add_ray_target`` for geometry outside the MuJoCo model (for
+  example many rigid meshes posed by user code). A target runs inside the sense graph
+  right after the MuJoCo raycast and keeps the nearer hit per ray.
 
 Changed
 ^^^^^^^

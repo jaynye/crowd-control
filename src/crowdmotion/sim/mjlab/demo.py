@@ -1,7 +1,7 @@
-"""mjlab plaza demos: graph-driven capsule humans seen by a LiDAR rig.
+"""mjlab plaza demos: graph-driven humans seen by a LiDAR rig.
 
-  crowd demo video [--graph <graph.pt>] [--out runs/<UTC>_mjlab_graph_demo] [--seconds 20]
-  crowd demo viser [--graph <graph.pt>] [--device cpu] [--port 8080]
+  crowd demo video [--graph <graph.pt>] [--geometry rigid|capsules] [--out runs/<UTC>_mjlab_graph_demo] [--seconds 20]
+  crowd demo viser [--graph <graph.pt>] [--geometry rigid|capsules] [--device cpu] [--port 8080]
 
 `video` renders offscreen to `crowd.mp4` at the environment rate (50 fps; needs
 `MUJOCO_GL=egl` on a GPU machine or `osmesa` on CPU) and writes `summary.json`.
@@ -9,6 +9,10 @@
 random crowd) and debug overlays (LiDAR hits, goals, commanded velocities).
 Open the printed port in a browser, through an SSH tunnel on a remote machine.
 Both use the `GraphCrowd` command term (`crowdmotion.sim.mjlab.command`).
+
+Humans are rigid Core-skin meshes by default (`--geometry`). The Viser demo builds
+both rigid meshes and capsules; its "Crowd body" panel switches the humans shown and
+the geometry the LiDAR hits.
 """
 
 from __future__ import annotations
@@ -27,9 +31,39 @@ from crowdmotion.core.rundir import RunDir
 
 def _common(parser: argparse.ArgumentParser, default_device: str) -> None:
   parser.add_argument("--graph", type=Path, help="saved graph (default: $CROWD_GRAPH or artifact graph-default)")
+  parser.add_argument("--config", type=Path,
+                      help="behavior evaluation JSON: design, its section (steering or encounter) and graph_overrides")
   parser.add_argument("--device", default=default_device)
   parser.add_argument("--humans", type=int, default=16)
   parser.add_argument("--seed", type=int, default=0)
+  parser.add_argument("--geometry", choices=("rigid", "capsules"), default="rigid",
+                      help="human body geometry for display and LiDAR (Viser starts with it and can switch)")
+
+
+def _make_env_cfg(args, human_geometry=None, **kwargs):
+  """Use validated evaluation settings; CLI controls crowd size, seed and duration."""
+  from crowdmotion.sim.mjlab.plaza import make_plaza_env_cfg
+
+  steering, encounter, design, overrides = None, None, "plaza", {}
+  if args.config is not None:
+    from crowdmotion.behavior.designs import design_of, section_cfg
+    from crowdmotion.core.config import load_json
+    from crowdmotion.iterate.evaluate import resolved_config
+
+    behavior = resolved_config(load_json(args.config))
+    design = design_of(behavior)
+    if design == "encounter":
+      encounter = section_cfg(behavior)
+    else:
+      from crowdmotion.behavior.plaza import PlazaSteeringCfg
+
+      steering = PlazaSteeringCfg(**behavior["steering"])
+    overrides = behavior["graph_overrides"]
+  cfg = make_plaza_env_cfg(str(args.graph or default_graph()), humans=args.humans,
+                           seed=args.seed, steering=steering, human_geometry=human_geometry or args.geometry,
+                           design=design, encounter=encounter, **kwargs)
+  cfg.commands["crowd"].graph_overrides = overrides
+  return cfg
 
 
 def video(argv=None) -> None:
@@ -40,17 +74,16 @@ def video(argv=None) -> None:
   parser.add_argument("--width", type=int, default=1280)
   parser.add_argument("--height", type=int, default=720)
   args = parser.parse_args(argv)
-  graph = args.graph or default_graph()
   arg_info = {k: str(v) for k, v in vars(args).items()}
 
   import imageio.v2 as imageio
   import mujoco
   from mjlab.envs import ManagerBasedRlEnv
 
-  from crowdmotion.sim.mjlab.plaza import make_plaza_env_cfg, set_hit_sphere_radius
+  from crowdmotion.sim.mjlab.plaza import set_hit_sphere_radius
 
   with RunDir.create("mjlab_graph_demo", out=args.out, record={"args": arg_info}) as run:
-    cfg = make_plaza_env_cfg(str(graph), humans=args.humans, seed=args.seed, width=args.width, height=args.height)
+    cfg = _make_env_cfg(args, width=args.width, height=args.height)
     env = ManagerBasedRlEnv(cfg, device=args.device, render_mode="rgb_array")
     set_hit_sphere_radius(env)
     env.reset()
@@ -137,12 +170,12 @@ def viser(argv=None) -> None:
   from mjlab.viewer import ViserPlayViewer
   from mjlab.viewer.base import VerbosityLevel
 
-  from crowdmotion.sim.mjlab.plaza import make_plaza_env_cfg, set_hit_sphere_radius
+  from crowdmotion.sim.mjlab.plaza import set_hit_sphere_radius
 
-  cfg = make_plaza_env_cfg(
-    str(args.graph or default_graph()), humans=args.humans, num_envs=args.num_envs, seed=args.seed,
-    lidar_azimuth=args.lidar_azimuth, lidar_stride=stride,
-  )
+  # Both geometries, active one first, so the "Crowd body" panel can switch them.
+  both = (args.geometry, "capsules" if args.geometry == "rigid" else "rigid")
+  cfg = _make_env_cfg(args, human_geometry=both, num_envs=args.num_envs, lidar_azimuth=args.lidar_azimuth,
+                      lidar_stride=stride)
   env = ManagerBasedRlEnv(cfg, device=args.device)
   set_hit_sphere_radius(env)
   wrapped = RslRlVecEnvWrapper(env)

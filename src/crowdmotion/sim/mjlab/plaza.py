@@ -1,13 +1,18 @@
-"""A walled plaza with a LiDAR rig and graph-driven capsule humans, as an mjlab env config."""
+"""A walled plaza with a LiDAR rig and graph-driven humans, as an mjlab env config.
+
+Humans are rigid Core-skin meshes by default (`human_geometry`); capsules remain
+available, alone or beside the meshes for the Viser toggle (`GraphCrowd`).
+"""
 
 from __future__ import annotations
 
 import mujoco
 import torch
 
+from crowdmotion.behavior.encounter import EncounterCfg
 from crowdmotion.behavior.plaza import PlazaSteeringCfg
 from crowdmotion.sim.capsules import CapsuleSkeleton
-from crowdmotion.sim.mjlab.command import GraphCrowdCfg
+from crowdmotion.sim.mjlab.command import MESH_TAG, GraphCrowdCfg
 from crowdmotion.sim.scene import CAMERAS, COLORS, sim_room_spec
 
 
@@ -25,9 +30,21 @@ def make_plaza_env_cfg(
   height: int = 720,
   step_dt: float = 0.02,
   decimation: int = 1,
+  human_geometry: str | tuple[str, ...] = ("rigid",),
+  rotations_path: str | None = None,
+  design: str = "plaza",
+  encounter: EncounterCfg | None = None,
 ):
   """A walled plaza (library XZ -> MuJoCo XY as (x, -z)), a LiDAR rig, and
-  `humans` graph-driven capsule humans per environment.
+  `humans` graph-driven humans per environment.
+
+  `human_geometry`: `"rigid"` (full-resolution Core-skin pieces, the default),
+  `"capsules"`, or both as a tuple whose first entry starts active (the Viser demo
+  switches between them). Rigid pieces are visual geoms in group 1; the LiDAR traces
+  groups 0 and 2 and sees them through `GraphCrowd`'s ray target. Capsules sit in
+  group 2. `rotations_path`: the graph's joint rotations (rigid only; default
+  artifact `graph-rotations`). `design`: the behavior design, `plaza` (`steering`) or
+  `encounter` (`encounter`); the active design's section sets the room size.
 
   Everything is kinematic, so contacts are disabled and one physics step per
   environment step suffices (`decimation`); both matter on CPU.
@@ -40,10 +57,19 @@ def make_plaza_env_cfg(
   from mjlab.viewer import ViewerConfig
 
   steering = steering or PlazaSteeringCfg(obstacles=((scanner_xz[0], scanner_xz[1], 0.3),))
-  hx, hz = steering.half_x, steering.half_z
-  blob = torch.load(graph_path, map_location="cpu", weights_only=False)
-  skeleton = CapsuleSkeleton.from_rest(blob["meta"], blob["rest_joints"])
-  del blob
+  encounter = encounter or EncounterCfg(obstacles=((scanner_xz[0], scanner_xz[1], 0.3),))
+  scene = encounter if design == "encounter" else steering
+  hx, hz = scene.half_x, scene.half_z
+  geometry = (human_geometry,) if isinstance(human_geometry, str) else tuple(human_geometry)
+  skeleton = body = None
+  if "capsules" in geometry:
+    blob = torch.load(graph_path, map_location="cpu", weights_only=False)
+    skeleton = CapsuleSkeleton.from_rest(blob["meta"], blob["rest_joints"])
+    del blob
+  if "rigid" in geometry:
+    from crowdmotion.sim.body import RigidBody, core_pieces
+
+    body = RigidBody(list(core_pieces()))
 
   def room_spec() -> mujoco.MjSpec:
     return sim_room_spec(hx, hz)
@@ -60,7 +86,10 @@ def make_plaza_env_cfg(
 
   def crowd_spec() -> mujoco.MjSpec:
     spec = mujoco.MjSpec()
-    skeleton.add_to_spec(spec, humans, COLORS)
+    if skeleton is not None:
+      skeleton.add_to_spec(spec, humans, COLORS)
+    if body is not None:
+      body.add_to_spec(spec, humans, COLORS, group=1, prefix="core", tag=MESH_TAG)
     return spec
 
   lidar = RayCastSensorCfg(
@@ -96,7 +125,9 @@ def make_plaza_env_cfg(
     ),
     commands={
       "crowd": GraphCrowdCfg(
-        graph_path=str(graph_path), humans=humans, steering=steering, seed=seed, debug_vis=True
+        graph_path=str(graph_path), humans=humans, steering=steering, design=design, encounter=encounter,
+        seed=seed, debug_vis=True,
+        human_geometry=geometry, rotations_path=rotations_path,
       ),
     },
     viewer=ViewerConfig(

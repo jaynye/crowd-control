@@ -10,6 +10,11 @@ ARDY generates from the last `history` executed frames, and only the first
 `edge_frames` new frames are kept. Each edge is therefore a genuine ARDY
 continuation of the frames before it under a known command.
 
+`command_source` picks the commands: "random" (default, `RandomCommands`: root path
+only) or "turns" (`TurnCommands`: stand / walk / in-place turn / arc segments whose
+plans also carry per-frame body-heading targets). `commands` holds the selected
+source's ranges (`CommandRanges` or `TurnRanges`).
+
 Writes `library.pt` (a dict of tensors, see `save_library`) and `run.json`.
 """
 
@@ -24,7 +29,7 @@ from pathlib import Path
 import torch
 
 from crowdmotion.backends.registry import ArdyConfig, config_from_case, make_backend
-from crowdmotion.behavior.commands import CommandRanges, RandomCommands
+from crowdmotion.behavior.commands import CommandRanges, RandomCommands, TurnCommands, TurnRanges
 from crowdmotion.behavior.controller import CrowdController
 from crowdmotion.behavior.kinematics import WindowVelocity
 from crowdmotion.behavior.sources import OnlineMotionSource
@@ -41,7 +46,8 @@ LIBRARY_DEFAULTS = {"model": ArdyConfig.model, "steps": 5, "precision": "tf32", 
 LIBRARY_KEYS = ("model", "steps", "precision", "cfg_type", "future")
 # Every key a library config may hold (unknown keys, e.g. typos, are errors).
 CONFIG_KEYS = (*LIBRARY_KEYS, "name", "description", "history", "edge_frames", "seed", "humans", "batch",
-               "duration", "commands")
+               "duration", "commands", "command_source")
+COMMAND_SOURCES = ("random", "turns")
 
 
 def library_backend(cfg: dict):
@@ -62,12 +68,20 @@ def generate_streams(backend, cfg: dict, seed_offset: int, humans: int) -> dict:
   seeds = human_seeds(cfg.get("seed", 0), torch.arange(humans), "stream", offset=seed_offset)
   gen = torch.Generator().manual_seed(cfg.get("seed", 0) * 7919 + seed_offset)
   h0 = (torch.rand(humans, generator=gen) * 2 * math.pi - math.pi).to(dev)
-  commands = RandomCommands(seeds, h0, CommandRanges.from_dict(cfg.get("commands")))
+  kind = cfg.get("command_source", "random")
   source = OnlineMotionSource(backend, history_frames=hist, cast_history=True)
-  ctrl = CrowdController(commands, source, WindowVelocity(fps))
+  if kind == "random":
+    commands = RandomCommands(seeds, h0, CommandRanges.from_dict(cfg.get("commands")))
+    ctrl = CrowdController(commands, source, WindowVelocity(fps))
+  elif kind == "turns":
+    commands = TurnCommands(seeds, h0, TurnRanges.from_dict(cfg.get("commands")))
+    ctrl = CrowdController(commands, source, WindowVelocity(fps), planner=commands.plan)
+  else:
+    raise ValueError(f"command_source must be one of {COMMAND_SOURCES}, not {kind!r}")
   ctrl.reset(seeds, torch.zeros(humans, 2, device=dev), h0)
   feats, joints, roots, heads, contacts, rots = [], [], [], [], [], []
   cmd_speed, cmd_heading, cmd_mode = [], [], []
+  turn_rows = {"heading_target": [], "cmd_rate": [], "cmd_angle": [], "cmd_radius": [], "cmd_segment": []}
   for k in range(edges):
     step = ctrl.advance(k * edge / fps, take=edge)
     m = step.motion
@@ -80,7 +94,13 @@ def generate_streams(backend, cfg: dict, seed_offset: int, humans: int) -> dict:
     cmd_speed.append(step.speed)
     cmd_heading.append(step.heading)
     cmd_mode.append(torch.as_tensor(commands.state()["mode"], device=dev))
-  return {
+    if kind == "turns":
+      st = commands.state()
+      turn_rows["heading_target"].append(commands.reference[:, :edge])
+      for key, name in (("cmd_rate", "rate"), ("cmd_angle", "angle"), ("cmd_radius", "radius"),
+                        ("cmd_segment", "segment")):
+        turn_rows[key].append(torch.as_tensor(st[name], device=dev))
+  out = {
     "features": torch.cat(feats, 1),
     "posed_joints": torch.cat(joints, 1),
     "root_pos": torch.cat(roots, 1),
@@ -92,6 +112,10 @@ def generate_streams(backend, cfg: dict, seed_offset: int, humans: int) -> dict:
     "cmd_mode": torch.stack(cmd_mode, 1),
     "seeds": seeds,
   }
+  if kind == "turns":
+    out["heading_target"] = torch.cat(turn_rows.pop("heading_target"), 1)
+    out.update({key: torch.stack(rows, 1) for key, rows in turn_rows.items()})
+  return out
 
 
 def save_library(path: Path, parts: list[dict], backend, cfg: dict) -> dict:
@@ -100,7 +124,11 @@ def save_library(path: Path, parts: list[dict], backend, cfg: dict) -> dict:
   Per-stream tensors are `[N, T, ...]` with T = edges * edge_frames: features
   (fp16), posed_joints, root_pos, heading, contacts, local_rot (fp16). Per-edge
   commands are `[N, edges]`: cmd_speed, cmd_heading (world), cmd_mode (0 walk,
-  1 stand).
+  1 stand; with turning commands also 2 in-place turn, 3 arc). Turning commands add
+  `heading_target [N, T]` (the executed frames' dense planned heading reference, also
+  where it was not constrained or not passed to the generator) and per-edge `cmd_rate` (signed
+  rad/s), `cmd_angle` (signed segment turn, rad), `cmd_radius` (arcs, m; NaN
+  otherwise) and `cmd_segment` (segment counter).
   """
   lib = {key: torch.cat([p[key].cpu() for p in parts]) for key in parts[0]}
   lib["features"] = lib["features"].half()
@@ -121,6 +149,8 @@ def save_library(path: Path, parts: list[dict], backend, cfg: dict) -> dict:
     "cfg_type": backend.cfg_type,
     "precision": backend.precision,
   }
+  if cfg.get("command_source", "random") != "random":
+    lib["meta"]["command_source"] = cfg["command_source"]
   torch.save(lib, path)
   return lib
 

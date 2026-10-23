@@ -1,0 +1,201 @@
+Make the encounter design's humans decisive within the launcher's time budget: resolve
+standoffs quickly with minimal, realistic avoidance while keeping a small, tunable
+population of stubborn humans. Read and follow the repository's AGENTS.md first,
+including the 2026-10-06 user direction on the encounter design. The launcher has
+already created a local iteration session; use the path and deadline in the appended
+launcher context. Do not create another session or submit any Slurm jobs. Evaluation,
+replay and comparison run here on the allocated compute node.
+
+Start by inspecting the working tree, the project status that AGENTS.md points to, and
+the encounter-design, turning-library and 2026-10-07 encounter-turns experiment notes
+it links. Keep any pre-existing work. Record the outer run in the project's run log
+before starting experiments, and follow the project memory workflow throughout. Keep
+all experimental outputs, candidate configs, visual-review frames and reports within
+this run. Never overwrite outputs. Use crowd iterate run with unique request names,
+per-request timeouts and explicit rule notes for each evaluation, render and
+comparison. Use crowd iterate note for plans, observations and decisions. Continue
+through several evidence-based iterations when time permits; completing the references
+alone does not complete this task.
+
+User direction (2026-10-12). This crowd is close to being used to train a crowd-avoiding
+humanoid policy, and one behavior problem remains. Humans wait too long and are not
+decisive. Two humans frequently bump into each other and stop, and then neither does
+anything. Humans should still follow shortest-path principles and deviate minimally
+from their existing path. The user suggested two directions, and either or both may be
+right:
+- additional transitions, for example a step back when a collision is detected;
+- more intelligent transitions, for example deviating by a turn of the smallest angle
+  that clears the other person.
+The probability of avoidant behavior should rise. The population of stubborn,
+non-avoidant humans should be low, but it must remain and stay easily tunable, because
+the robot policy must learn to handle such humans.
+
+Graph. This run uses the opt-in merged graph, artifact graph-turns, with its joint
+rotations, artifact graph-turns-rotations (paths in artifacts.toml). The submission
+exports CROWD_GRAPH and CROWD_GRAPH_ROTATIONS for them, and the launcher context names
+the graph. Before the first evaluation, verify that both variables resolve to these
+artifact paths; if they do not, record the failure and exit. Also pass --graph with the
+launcher's path to every evaluation. The golden tests and some unit tests read
+CROWD_GRAPH: run them under env -u CROWD_GRAPH -u CROWD_GRAPH_ROTATIONS so they use
+graph-default. A golden mismatch means a regression to fix, never a reason to
+re-capture.
+
+The design today (src/crowdmotion/behavior/encounter.py; rules in
+docs/usage/behavior-iteration.md under behavior designs). Humans follow random
+waypoints and detect threats in a collision bubble. A cruising human switches with
+probability 1 - exp(-rate dt), where rate = switch_rate_hz (1 - assertiveness) urgency.
+Assertiveness is uniform on (0, 0.9) per human and decays as exp(-blocked/patience_s)
+while the stop rule blocks the human. The human keeps the drawn intervention (sidestep,
+veer, pivot or yield) until it finishes, and stops before colliding with a 1 cm target
+clearance. A human that is already blocked cannot draw yield. Veer and pivot angles are
+drawn from fixed ranges (20-45 and 45-90 deg), not computed from the threat.
+
+Hypotheses visible in the code. They are not established; confirm or reject each from
+traced standoff examples before changing behavior:
+- Veer phase 0 travels along the current heading, which points at the threat, so the
+  stop rule removes that motion and the veer stalls until its timeout.
+- The sidestep's forward component and the veer arc keep pushing into the stop rule,
+  so a blocked human that does decide still cannot move.
+- Both humans yield, and both resume into each other.
+- An intervention finishes, the cruise turn back toward the goal re-forms the
+  conflict, and the cycle repeats.
+- The graph does not realize a pivot or a backward step in time from standing.
+- The threat test needs approaching intended velocities. Stopped or waiting humans, and
+  humans whose intended motion is removed, may stop counting as threats, so no switch
+  happens.
+- Uniform assertiveness up to 0.9 and a 3 s patience make many humans effectively
+  stubborn for several seconds.
+
+Work in this priority order, and record any item you do not finish as unfinished:
+
+1. Measure standoffs first. Unless an equivalent exists, add standoff diagnostics to the
+   shared metrics layer (src/crowdmotion/metrics/encounters.py), reported by evaluate
+   and diagnose, with definitions stated in the output:
+   - pair standoffs: two humans both stopped or nearly stopped, close together (for
+     example a root gap within about 1 m, or a small cylinder clearance) for longer than a
+     stated duration, neither mid-maneuver; give count per human-minute and duration
+     p50/p95/max;
+   - time from a pair's first threat to resolution (separating, or passing), with p50/p95;
+   - among threatening encounters, the share in which at least one human deviates
+     (an intervention, or a measured lateral or backward displacement), and the share in
+     which neither does;
+   - stop-episode durations, and total stopped time per human-minute while a goal is
+     pending, versus mean speed and goal arrivals per human-minute.
+   These are diagnostics with stated cutoffs, not pass thresholds. Freeze the
+   references, then evaluate them with the new metrics.
+
+2. Trace standoffs. Pick several real standoffs from the 20 s and 60 s references.
+   Follow both humans' modes, phases, urgency, effective assertiveness, intended versus
+   executed velocity and the stop rule step by step, and identify which hypothesis
+   above, or which other cause, holds. Render follow views of at least two of them.
+
+3. Fix the causes, one mechanism at a time, in the shared layers (command source,
+   planner, motion source, graph cost and mask). Every new mechanism is a new option
+   that defaults off. Candidates, to be chosen by the traces:
+   a. Executable resolution for a blocked human: when the stop rule blocks a human with a
+      pending goal, it should soon do something the stop rule allows. Options: turn in
+      place first, then walk on, or a short step back or back-diagonal away from the
+      other person, then re-decide. A step back is a new strategy with its own opt-in
+      weight and distance range, and sidestep and veer should not push into the
+      blocking neighbor.
+   b. Minimal deviation: compute the turn or sidestep amount from the closest-approach
+      geometry (the smallest heading change, or lateral offset, that clears the other
+      body by the passing margin), with a small stochastic margin. The fixed angle
+      ranges stay as the default. Prefer the side that costs less detour toward the
+      human's goal, unless the head-on convention applies.
+   c. Stubborn population: an explicit stubborn_fraction drawn per human at reset from
+      the encounter stream. A stubborn human never initiates an intervention and keeps
+      its path; the stop rule still applies. Non-stubborn humans get their own
+      assertiveness range, which you may lower. Define what happens when two stubborn
+      humans block each other: there must be no permanent deadlock by construction, for
+      example a long stubborn patience. Report the share of stubborn humans, and make
+      stubborn_fraction and the new ranges live controls in the Viser encounter panel.
+      Test the binding headless; you cannot see the browser, so state that the
+      interactive view is unverified by you.
+   d. Only after a-c: raise the avoidance hazard (rate, urgency exponent, patience)
+      if standoffs remain, and report the contact and spacing cost.
+
+4. Backward-step coverage. Before relying on a step back, audit from the saved tables
+   how many admissible short backward or back-diagonal edges start from standing or slow
+   walking on graph-turns, how they look (edge sheets), and whether the graph executes
+   them when commanded. The library is about 17% backward frames, so coverage may
+   already exist. If coverage is missing, record it with a concrete proposal for an
+   offline supplement and do not build one in this run.
+
+5. Decision realism. Check the switch percentage given a threat against urgency,
+   assertiveness and stubbornness, the strategy mix, stop episodes, the share of
+   lateral and backward motion (it should be deliberate and uncommon, not the default
+   resolution), forward travel relative to body facing, and the bubble radius and
+   passing margin against spacing and speed. These are heuristics with no human
+   calibration; report what changes, not a calibrated claim.
+
+6. mjlab check, if a candidate is ready: one short crowd demo video run of the selected
+   config with rigid mesh humans on graph-turns (CROWD_GRAPH_ROTATIONS must pair with
+   the graph; the load check rejects a mismatch).
+
+Evaluation. Before changing runtime behavior, freeze copies of the references in this
+run and evaluate them on graph-turns:
+- crowd references on development seeds 0, 1 and 2 at 20 s and 60 s:
+  configs/behavior/encounter_turns.json (the incumbent) and
+  configs/behavior/plaza_forward_posture.json (the original design);
+- the two-human probes configs/behavior/encounter_head_on.json and
+  encounter_crossing.json as configured (8 seeds, 10 s).
+Add a third two-human probe in which the humans meet head-on at low speed and the stop
+rule engages (for example close starts or slow preferred speeds), so that the blocked
+standoff itself is reproduced. Promote it as a config if it is useful.
+
+With every new option off, the incumbent must reproduce its frozen reference exactly;
+check that, since new random slots or code paths can shift draws. Evaluate each
+candidate against the references on matching seeds, and run diagnose on each. Judge
+candidates on several measures together:
+- the standoff metrics;
+- joint-sphere clearance and contact frames;
+- the minimum root gap;
+- mean speed and goal arrivals;
+- planted-foot speed and acceleration;
+- pose seams;
+- direction shares relative to body facing;
+- the redirect metric.
+Decisiveness that buys contacts is not an improvement; report the trade-off.
+Seeds 101, 307 and 911 are the unseen held-out bank. Use them once, only for the selected
+configuration after you freeze it, at 20 s and 60 s. Save the selected candidate as
+configs/behavior/encounter_decisive.json, described as a development candidate.
+
+Visual review. Render saved rollouts in overview and follow views, extract
+representative still frames into the run, and inspect them with available image tools.
+Include follow views of a standoff before and after your change, a step back if you add
+one, minimal-angle turns, and a stubborn human being passed. An existing MP4 alone
+does not establish visual review; state any limitation of the inspection tools. Do not
+invent pass thresholds or claim that untested proposals improved behavior.
+
+Constraints:
+- There is no tie-break between two humans (user, 2026-10-06). Both may decide at once.
+  Independent per-human random draws are fine. Deterministic precedence, for example by
+  index, is not.
+- stop_clearance_m stays 0.01 m by default (the user's starting value). Report evidence
+  about it rather than changing it.
+- Use the saved graphs. Do not load motion priors, rebuild the library or graph, change
+  third-party clones or dependencies, or expand into robot training; another session
+  handles training separately.
+- Every new mechanism defaults off. The plaza design must stay bit-exact, and all golden
+  expected files stay unchanged.
+- Encounter randomness stays on the per-human encounter seed scheme, independent of
+  batch order and composition.
+- Do not switch plaza RNG schemes or make GraphConfig strict as part of this task.
+- Do not commit, push, publish or send messages.
+
+Check the deadline before every expensive action. Stop experiments with enough time
+left to run the relevant CPU tests and goldens, finalize the run-log outcome and project
+memory (experiment note, status, affected design notes, docs for new settings), and
+write a concise report in the outer run. Distinguish tested improvements, rejected
+candidates and unresolved limitations; cite the associated outputs. The final response
+should identify code changes, measurements, visually inspected seeds and views,
+validation and the next useful experiment.
+
+Failures. A failing script or test that you wrote is a bug to fix and rerun under a new
+request name, not a reason to stop. Only a failure you cannot fix in this task ends the
+run early: graph or artifact access, rendering, the crowd tools themselves, or Codex
+access. Then record it, finish the bookkeeping and the report, and exit; never present
+proposals as results. Never run crowd iterate stop: it terminates this agent at once,
+before the report and bookkeeping are written. The launcher closes the session when
+you exit.

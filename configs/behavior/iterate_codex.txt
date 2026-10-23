@@ -1,0 +1,128 @@
+Iteratively improve the realism of the saved motion graph's stochastic crowd behavior
+within the launcher's time budget. Read and follow the repository's AGENTS.md first,
+including the 2026-10-05 user direction on transitions, posture and live tuning. The
+launcher has already created a local iteration session; use the path and deadline in
+the appended launcher context. Do not create another session or submit any Slurm jobs.
+Evaluation, replay and comparison run here on the allocated compute node.
+
+Start by inspecting the working tree, the project status that AGENTS.md points to,
+and the previous behavior iteration run it cites (its report, frozen configs and
+session journal). Keep any pre-existing work. Record the outer run in the project's run log before
+starting experiments, and follow the project memory workflow throughout. Keep all
+experimental outputs, candidate configs, visual-review frames and reports within this
+run. Never overwrite outputs. Use crowd iterate run with unique request names,
+per-request timeouts and explicit rule notes for each evaluation, render and
+comparison. Use crowd iterate note for plans, observations and decisions. Continue
+through several evidence-based iterations when time permits; completing a baseline
+alone does not complete this task.
+
+Focus of this run: the transitions between motions. The user reviewed the previous
+candidates. Motion is much more realistic, but (a) sidestepping is too common compared
+with turning the body (for example about 90 degrees) and then walking forward; (b) many
+walking clips are visibly hunched while others are upright, and a human's posture should
+not switch arbitrarily; (c) some clips change the human's vertical position in ways that
+are infeasible on flat ground; (d) the user wants to tune the stochasticity live in
+Viser. Determining the right transition behavior is the main job. Work in this priority
+order, and record any item you do not finish as unfinished:
+
+1. Edge annotations at load time. Derive per-edge labels from the saved tables
+   (edge_pose height appears to be absolute height above the ground; verify it).
+   This is not a graph rebuild: keep graph.pt and its format unchanged. hunch_ratio is
+   baked into the tables and raises if overridden, so new labels, filters and costs need
+   new GraphConfig fields that default off. Context measured on 2026-10-05 over the
+   134,820 valid edges, to be verified before you rely on it: the head-height ratio to
+   neutral_head_height (1.684 m, probably a T-pose) has median 0.935, with 21% of edges
+   below 0.90. Hips-to-Neck trunk pitch from vertical has median 13 degrees, quartiles
+   7/19 and p95 28. The head's forward offset from the hips has median 0.20 m. Pitch
+   correlates -0.62 with the head ratio and 0.93 with the head offset, and neither
+   tracks edge speed. About 62% of pitch variance lies between library streams, so
+   posture is largely a property of the stream, and natural successors may already
+   provide much of the persistence. Choose and validate a posture score: compare the
+   candidate measures and inspect still contact sheets of sampled edges from each class
+   before trusting any cutoff. Report the distribution and the reviewed examples rather
+   than inventing a calibration.
+
+2. Vertical feasibility on flat ground. Context: the Hips height range within an edge
+   has p99 0.10 m and maximum 0.50 m; about 1% of edges keep the lower foot above
+   0.18 m for the whole edge; one edge has a 1.8 m foot-height outlier. Choose an
+   opt-in mask from the distribution plus visual review of flagged edges, and report how
+   many edges and boundaries it removes. Terrain such as stairs is later work; do not
+   design for it now. Masking can leave a boundary with no admissible candidate (all
+   scores -inf, NaN in the Gumbel selection): count those dead ends and implement an
+   explicit, tested fallback. Add executed-trace metrics for pelvis height and
+   lowest-foot height to evaluation or diagnostics.
+
+3. Per-human posture style. Each human carries a posture latent (at least upright
+   versus hunched). It is sampled at reset from a configurable initial distribution
+   whose default is strongly biased toward upright, and it evolves as a sticky
+   stochastic process with configurable switching rates: hunched humans mostly stay
+   hunched and upright humans mostly stay upright. The initial distribution applies at
+   reset; switching rates apply live. The graph scores candidates against the latent
+   with a soft cost term (a weight, not a hard filter, unless the joint coverage audit
+   shows that a filter keeps enough walking and turning). start_boundaries must draw
+   from the sampled class, so the start pose does not work against the latent. Use
+   per-human core.rng streams under a new named human_seeds scheme; do not change the
+   legacy plaza shared RNG. First audit posture class jointly with motion class,
+   especially upright forward walking, upright forward turning and upright turning in
+   place (earlier evidence: very few slow-turn edges; committed turns completed only
+   8/49 attempts). Measure the realized posture share and switch rate against the
+   configured values.
+
+4. Turn then walk versus sidestep. Ordinary direction changes should mostly be
+   realized by a body turn followed by forward walking. Sideways and backward travel
+   should be uncommon in ordinary travel and remain available for deliberate or abrupt
+   close avoidance. Make the rarity a tunable stochastic parameter (for example a
+   per-human sidestep propensity or a cost weight), not a hard ban. Add a metric that
+   classifies each ordinary direction change above a stated angle as body turn then
+   forward, or as lateral/backward travel, and report it with the forward, sideways and
+   backward shares relative to body facing. Curved forward paths are not sidesteps. If
+   upright turning coverage limits this, report the evidence rather than hiding it.
+
+5. Live tuning in Viser. Last, and time-boxed. Add a panel to crowd demo viser (in
+   crowdmotion.sim.mjlab) that changes, without restarting, the parameters that exist
+   by then: cost weights and temperature, the sidestep/turn parameters, posture
+   switching rates, the initial posture distribution (applied at the next reset) and the
+   vertical mask if it can be toggled safely. total_cost reads weights with getattr on
+   every call; verify the same holds for steering, temperature and any new parameter.
+   Test the bindings headless. You cannot see the browser, so state that the
+   interactive view is unverified by you.
+
+Evaluation. The incumbent is the selected candidate configuration frozen by the
+previous iteration run (the project status names the file); the original baseline
+stays frozen as a second reference. Freeze both and evaluate them on
+fixed development seeds before changing runtime behavior. Seeds 11, 23 and 47 were the
+previous held-out bank and have now been seen: pick a fresh held-out bank, and freeze the
+selected configuration before evaluating it there. Implement one mechanism at a time
+in the shared intent, steering, motion-source or graph cost layers, keeping all crowd
+consumers on CrowdController. Evaluate each candidate against the references on
+matching seeds. Review spacing, acceleration, response delay, foot sliding and pose
+seams together with direction shares, the turn-versus-sidestep metric, posture share
+and persistence, and the vertical metrics. Render saved rollouts in overview and
+follow views, extract representative still frames into the run, and inspect them with
+available image tools. Include follow views of upright and hunched humans and of
+direction changes. An existing MP4 alone does not establish visual review; state any
+limitation of the inspection tools. Do not invent pass thresholds or claim that
+untested proposals improved behavior. Reserve time for held-out seeds and a small mjlab
+check if a candidate is ready.
+
+Use the saved graph; do not load motion priors, rebuild the library/graph, change
+third-party clones or dependencies, or expand into training. Preserve the original
+baseline and all golden expected files; every new mechanism defaults off. Do not switch
+plaza RNG schemes or make GraphConfig strict as part of this task. Do not commit, push,
+publish or send messages.
+
+Check the deadline before every expensive action. Stop experiments with enough time
+left to run relevant CPU checks, finalize the run-log outcome and project memory
+(experiment note, status, affected design notes, docs for new settings and the Viser
+panel), and write a concise report in the outer run. Distinguish tested improvements,
+rejected candidates and unresolved limitations; cite the associated outputs. The final
+response should identify code changes, measurements, visually inspected seeds/views,
+validation and the next useful experiment.
+
+Failures. A failing script or test that you wrote is a bug to fix and rerun under a new
+request name, not a reason to stop. Only a failure you cannot fix in this task ends the
+run early: graph or artifact access, rendering, the crowd tools themselves, or Codex
+access. Then record it, finish the bookkeeping and the report, and exit; never present
+proposals as results. Never run crowd iterate stop: it terminates this agent at once,
+before the report and bookkeeping are written. The launcher closes the session when
+you exit.

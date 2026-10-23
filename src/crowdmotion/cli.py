@@ -17,18 +17,25 @@ import sys
 COMMANDS: dict[str, dict[str, tuple[str, str, tuple[str, ...]]]] = {
   "library": {
     "generate": ("crowdmotion.library.generate", "generate an offline ARDY motion library", ()),
+    "turns": ("crowdmotion.library.turns", "turn tracking, feet and ground checks of a turning library", ()),
   },
   "graph": {
     "build": ("crowdmotion.graph.build", "build a motion graph from a library and save it", ()),
     "report": ("crowdmotion.viz.report", "audit a saved graph and write an HTML report", ()),
+    "edge-review": ("crowdmotion.viz.edge_review", "audit posture and ground heights with saved-edge contact sheets", ()),
     "speed": ("crowdmotion.bench.graph_speed", "time graph stepping for a training population", ()),
+    "rotations": ("crowdmotion.graph.rotations", "save joint rotations for a graph's frames (rigid mesh humans)", ()),
+    "turns": ("crowdmotion.graph.turns", "turning-radius coverage of a saved graph under a flat-ground mask", ()),
   },
   "behavior": {
     "evaluate": ("crowdmotion.iterate.evaluate", "plaza rollouts on a saved graph: traces and metrics", ()),
+    "diagnose": ("crowdmotion.iterate.diagnose", "saved-motion seams, command response and progress diagnostics", ()),
+    "probe": ("crowdmotion.iterate.probe", "paired 90/180-degree response probes on the saved graph", ()),
     "render": ("crowdmotion.viz.replay", "replay a saved evaluation as a MuJoCo video", ()),
     "compare": ("crowdmotion.iterate.compare", "paired seed metrics and a review page", ()),
   },
   "iterate": {
+    "agent": ("crowdmotion.iterate.agent", "run a bounded Codex behavior iteration session", ()),
     "start": ("crowdmotion.iterate.session", "open an iteration session (one run folder)", ("start",)),
     "run": ("crowdmotion.iterate.session", "queue or run a named request in a session", ("run",)),
     "status": ("crowdmotion.iterate.session", "show a session's requests and results", ("status",)),
@@ -43,6 +50,7 @@ COMMANDS: dict[str, dict[str, tuple[str, str, tuple[str, ...]]]] = {
     "tables": ("crowdmotion.bench.tables", "Markdown tables of throughput and quality runs", ()),
     "clips": ("crowdmotion.viz.stick", "stick-figure videos of quality clips", ()),
     "sim-speed": ("crowdmotion.bench.sim_speed", "simulator speed reference points (mjlab)", ()),
+    "body-geometry": ("crowdmotion.bench.body_geometry", "LiDAR cost and fidelity of human body geometries", ()),
   },
   "demo": {
     "video": ("crowdmotion.sim.mjlab.demo", "render the mjlab plaza with LiDAR to MP4", ("video",)),

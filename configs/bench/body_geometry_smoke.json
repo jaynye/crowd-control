@@ -1,0 +1,118 @@
+{
+  "name": "body_geometry_smoke",
+  "description": "Pipeline smoke of crowd bench body-geometry (any GPU).",
+  "library": "library-ardy-h40",
+  "envs": 32,
+  "warmup": 3,
+  "steps": 5,
+  "seed": 0,
+  "bank": {
+    "sequences": 32,
+    "frames": 16
+  },
+  "lidar": {
+    "azimuth": 360,
+    "elevation": 16
+  },
+  "cases": [
+    {
+      "name": "capsules_m16",
+      "geometry": "capsules",
+      "humans": 16
+    },
+    {
+      "name": "rigid1200_m16",
+      "geometry": "rigid",
+      "humans": 16,
+      "faces": 1200
+    },
+    {
+      "name": "pieces1200_m16",
+      "geometry": "pieces",
+      "humans": 16,
+      "faces": 1200,
+      "constructor": "cubql"
+    },
+    {
+      "name": "skinned1200_m16",
+      "geometry": "skinned",
+      "humans": 16,
+      "faces": 1200
+    },
+    {
+      "name": "none",
+      "geometry": "none",
+      "humans": 16
+    },
+    {
+      "name": "capsules_m16_independent",
+      "geometry": "capsules",
+      "humans": 16,
+      "build": "independent"
+    },
+    {
+      "name": "rigid1200_m16_current",
+      "geometry": "rigid",
+      "humans": 16,
+      "faces": 1200,
+      "build": "current"
+    },
+    {
+      "name": "rigid1200_m16_v32",
+      "geometry": "rigid",
+      "humans": 16,
+      "faces": 1200,
+      "variants": 32
+    },
+    {
+      "name": "skinned1200_m16_sah",
+      "geometry": "skinned",
+      "humans": 16,
+      "faces": 1200,
+      "constructor": "sah"
+    },
+    {
+      "name": "pieces1200_m16_v32",
+      "geometry": "pieces",
+      "humans": 16,
+      "faces": 1200,
+      "variants": 32,
+      "constructor": "cubql"
+    },
+    {
+      "name": "skinned1200_m16_v32",
+      "geometry": "skinned",
+      "humans": 16,
+      "faces": 1200,
+      "variants": 32
+    }
+  ],
+  "fidelity": {
+    "envs": 8,
+    "humans": 16,
+    "steps": 2,
+    "reference_faces": 18152,
+    "cases": [
+      {
+        "name": "capsules",
+        "geometry": "capsules"
+      },
+      {
+        "name": "rigid1200",
+        "geometry": "rigid",
+        "faces": 1200
+      },
+      {
+        "name": "pieces1200",
+        "geometry": "pieces",
+        "faces": 1200,
+        "constructor": "cubql"
+      },
+      {
+        "name": "skinned1200",
+        "geometry": "skinned",
+        "faces": 1200
+      }
+    ]
+  }
+}

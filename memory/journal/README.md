@@ -33,5 +33,5 @@ instead.
 
 Retired: [memory system and online-generation benchmark](../archive/2026-09-30-memory-and-benchmark.md)
 (2026-09-30); [graph behavior report](../archive/2026-10-01-graph-behavior-report.md)
-(2026-10-01). The bounded iteration session's own journal is archived as
+(2026-10-01); [rigid mesh humans](../archive/2026-10-06-rigid-body-geometry.md) (2026-10-06); [encounter design](../archive/2026-10-06-encounter-design.md) (2026-10-06); [encounter turning-graph comparison](../archive/2026-10-07-encounter-turns-comparison.md) (2026-10-07). The bounded iteration session's own journal is archived as
 [behavior session journal](../archive/2026-10-01-behavior-session-journal.md).

@@ -1,6 +1,6 @@
 # Current status
 
-Snapshot updated 2026-10-01. Replace sections as work changes; do not
+Snapshot updated 2026-10-06. Replace sections as work changes; do not
 append history. Completed results move to dated
 [experiment notes](../experiments/README.md), with their conclusions in core; open
 questions move to [decisions](../decisions/README.md).
@@ -14,14 +14,34 @@ from an offline library.
 
 ## Active work
 
+### Recentering toward robot training (user, 2026-10-12)
+
+- **Direction:** the crowd is close to ready for training the crowd-avoiding robot
+  policy. One behavior problem remains: humans are not decisive. Two humans often bump
+  into each other and stop, and neither acts. Avoidance should become more likely, with
+  minimal deviation from each human's path. Candidate fixes are a step back on a
+  detected collision and smallest-angle turns. A small population of stubborn,
+  non-avoidant humans stays, and it must be easily tunable.
+- **Round 4 (Astra):** prompt `configs/behavior/iterate_codex_decisive.txt`, on
+  graph-turns, starting from `encounter_turns.json`. It measures standoffs first, then
+  traces their causes, then adds opt-in mechanisms and `stubborn_fraction`. The agent
+  records its run directory in the run log.
+- **Robot policy:** the user asked which architecture to prioritize:
+  - (a) a LiDAR policy from scratch;
+  - (b) a residual on SONIC's planner and tracker;
+  - (c) a LiDAR planner that replaces SONIC's kinematic planner;
+  - (d) SONIC fine-tuned to also take velocity commands.
+
+  The training environment is built in a separate snapshot checkout while Astra edits
+  this one, and is merged afterwards.
+
 ### Repo migration to git and local iteration (Phases 0–9 done 2026-10-01)
 
-- The tree is commit-ready; **the user creates the git repository and initial commit**
-  (Phase 10), then clones on the local Linux GPU machine: `scripts/bootstrap.sh`,
-  `scripts/fetch_artifacts.sh` (graph from the cluster; checkpoints from HF), unit and
-  golden tests, then the GPU checks: `tests/gpu`, and a small ARDY library plus a
-  throughput row with the pre-migration snapshot and the migrated tree on the same card.
-  Install steps: `docs/install.md`.
+- The repository now has commit `5c1ef9c`; the working tree includes preserved,
+  uncommitted launcher and behavior work. No commit or push was made during iteration.
+  Installation and migration steps remain in `docs/install.md`. Real-generator GPU
+  migration checks are still outstanding; the saved graph passed a small GPU mjlab
+  integration check on 2026-10-05.
 - The refactor is behavior-preserving: CPU goldens from the pre-migration code
   (`tests/golden/`) match bit for bit after every phase, including real ARDY and Kimodo
   on CPU. One deliberate difference: a `history` of 0 is rejected (it used to pass the whole
@@ -31,25 +51,146 @@ from an offline library.
 - mjlab is first-party (ledger D13); its upstream history is outside the repo (plain
   tracked files, the plan's default; a fork or subtree can still be adopted).
 - Next (Phase 11, user to agree): switch plaza steering to per-human streams and make
-  `GraphConfig` strict, record a new baseline, then resume the behavior iteration below
-  locally with `crowd iterate`.
+  `GraphConfig` strict and record a new baseline. The completed behavior iteration
+  below kept both deferred changes out of scope.
 
-### Behavior iteration: paused (2026-10-01)
+### Encounter behavior design and turning library (2026-10-06)
 
-- User accepted the report and authorized continual iteration with one run folder and
-  ephemeral journal, committed sampled turns biased toward 90°, a four-hour task limit.
-  The first session (`runs/20261001T061749Z_behavior_iteration/`) stopped at its
-  five-minute GPU-wait limit on Slurm (job 3994253 PENDING on `QOSGrpGRES`); its journal
-  is archived in [memory/archive](../archive/README.md).
-- **No real baseline/candidate evaluation or render has run; runtime behavior rules are
-  unchanged.** The turn distribution is a proposal, not an improvement result.
-  [Session evidence](../experiments/2026-10-01-graph-behavior-iteration.md).
-- Sessions now run locally by default (`crowd iterate start|run|status|note|stop`;
-  `docs/usage/behavior-iteration.md`); the Slurm executor keeps the GPU-wait and
-  deadline safeguards.
-- Next session: run the frozen baseline, implement committed turns and a facing cost
-  (a `@cost_term` class plus a `GraphConfig` weight), review paired seeds, saved-motion
-  renders and spacing/foot tradeoffs before mjlab integration.
+- **User direction (ledger D16):** keep the random-goal plaza design and add an alternate
+  `encounter` design that the iteration agent can also work on. It has:
+  - waypoint or velocity conditioning, with random waypoints for comparison;
+  - a configurable bubble;
+  - an assertiveness- and distance-dependent switch hazard;
+  - committed interventions, including gradual and in-place turns;
+  - a stop rule with a 1 cm tolerance.
+
+  Two humans may decide at once.
+- **Implemented, opt-in.** The plaza path is bit-exact against the previous day's run.
+  Configs: `configs/behavior/encounter*.json` and `plaza_forward_posture.json`.
+  Usage: `docs/usage/behavior-iteration.md#behavior-designs`.
+  [Results](../experiments/2026-10-06-encounter-design.md).
+- **Results on development seeds 0/1/2:**
+  - 94% forward travel against 70–83%;
+  - lower foot sliding and acceleration;
+  - joint-sphere contact at most about 1 cm, against plaza's −5 to −9 cm;
+  - slower walking: 0.43–0.50 against 0.58–0.64 m/s at 60 s.
+
+  The default graph realizes arcs but not in-place turns, which stand at a median
+  2.8°/s, and sidesteps are mostly oblique.
+- **Turning library (done, opt-in).** ARDY follows sparse body-heading targets: the hip
+  line turns 0.98 of the command at the median, and arcs come out at 1.04 of the radius.
+  The opt-in graph `graph-turns` (base plus a 9.1 h turning supplement; rotations in
+  `graph-turns-rotations`) raises admissible in-place edges from 8 to 5,873, of which
+  4,763 hold no planted twist. The supplement also adds 2,354 standing or straight edges
+  that hold a twist (67 in the base), so on this graph a human can stand twisted with
+  no turn requested.
+  [Note](../experiments/2026-10-06-turning-library.md).
+  - About 15% of generated in-place turns twist the pelvis while the feet stay planted.
+  - On this graph the encounter design's in-place turns execute (median 83°/s against
+    2.8°/s), and turn-then-walk resolutions roughly triple.
+  - Joint-sphere contact regresses to 2–7 cm and sliding rises.
+- **Round 3, Astra on graph-turns (2026-10-07; stopped after 13 of 225 min).**
+  [Note](../experiments/2026-10-07-encounter-turns-iteration.md).
+  - Opt-in planted-twist mask (`twist_mask`, `twist_max_foot_yaw_deg` 21.4°) removes
+    3,533 graph-turns edges: 1,110 in-place and 2,421 straight or standing. Without it,
+    2–4% of executed edges were planted twists.
+  - `configs/behavior/encounter_turns.json` is `encounter.json` plus the mask: a
+    development candidate, not frozen, held-out seeds unused. Minimum clearance
+    improved in all 6 unpaired crowd runs (60 s: −0.027 / −0.010 / +0.043 m); sliding,
+    acceleration and unresolved redirects did not.
+  - The mask is a live Viser control. Rigid mjlab and the Viser demo run on
+    graph-turns with `CROWD_GRAPH_ROTATIONS` set (launch: `docs/usage/demos.md`).
+  - Comparison video (plaza and encounter on graph-default, encounter on graph-turns
+    without and with the mask): `runs/20261007T165926Z_encounter_turns_video`.
+  - The agent stopped on a KeyError in its own script and killed itself with
+    `crowd iterate stop`. Both Codex prompts now treat own-script failures as bugs and
+    forbid `crowd iterate stop`.
+- **Next:**
+  - Relaunch the agent with `iterate_codex_encounter.txt` (launch command in
+    `docs/slurm.md`) from `encounter_turns.json`: contact tracing and tuning (stop
+    look-ahead, approach time, body radius), unresolved redirects and jams, decision
+    realism, then held-out seeds 101/307/911 once for a frozen candidate.
+  - Tune the bubble and passing margin together with spacing and speed.
+
+### Transition/posture iteration: development evidence, stopped before promotion (2026-10-05)
+
+- The local A40 session completed 190 requests, then stopped after one frame-extraction
+  invocation failed, following the user's explicit stop-on-failure instruction.
+  Outputs: `runs/20261005T225742Z_behavior_iteration/report.md` and its session journal.
+  [Results, inspected views and validation](../experiments/2026-10-05-transition-posture-iteration.md).
+- **Incumbent unchanged:** the previously selected configuration remains
+  `runs/20261005T201450Z_behavior_iteration/configs/selected_candidate.json`.
+  Both it and the original baseline were frozen and evaluated before runtime edits.
+  The new development candidate is
+  `runs/20261005T225742Z_behavior_iteration/configs/forward_floor080_peak012.json`;
+  it has not been promoted or frozen for held-out evaluation.
+- Implemented opt-in load-time edge annotations, flat-ground masks with an explicit
+  stationary-hold dead-end fallback, independent sticky per-human posture and matched
+  starts, soft posture/turn/entry-velocity costs, turn-before-walk steering, executed
+  height/posture/redirect metrics, and queued Viser live controls. All consumers still
+  use `CrowdController`; graph/defaults/legacy plaza RNG/golden expected files unchanged.
+- Three 60 s development seeds: ordinary forward travel 93.7–94.4% versus incumbent
+  78.2–83.9%; posture-class crossings 4.3–5.8 versus 18.0–19.4 per human-minute;
+  peak lowest-foot height .112 m versus 1.336 m. However seed-0 minimum root gap
+  worsens .635→.433 m, feet/seams are mixed, and many redirect attempts remain unresolved.
+  Controlled body responses are 47/48 versus incumbent 48/48 for both 90° and 180°.
+- Coverage limits slow turns: after the chosen mask, only two upright and three hunched
+  slow-turn edges remain. The .2 m/s explicit turn phase stalled; walking-turn phases
+  improved controlled response but did not dominate crowd metrics. The main
+  mostly-turn-then-walk objective is **unfinished**, not established by forward shares.
+- Nine initial edge sheets plus brief-airborne examples and several seed-0 follow/
+  overview variants were actually inspected. Seed-2 dense reversed follow exposed
+  a raised-foot transition. Final candidate image review is unfinished: its MP4
+  rendered, but extraction invoked base Python instead of the virtualenv and failed.
+- **Validation:** final 165 CPU tests and Ruff pass. Earlier same-host compatibility
+  matched 283 arrays/27 JSON outputs across all 12 fast golden cases and both frozen
+  reference trace banks. Both trees retained historical expected-file mismatches;
+  final peak-mask/diagnostic additions were not followed by another golden run.
+  Viser bindings are headless-tested; browser and new GPU integration are unverified.
+- **Comparison video (2026-10-06):** `runs/20261006T175357Z_behavior_video/comparison.mp4`
+  shows baseline, round-1 selected and this candidate on the seen seeds 11/23/47.
+  Posture and forward share improve. Seed 47 briefly exceeds the 0.12 m foot mask
+  (0.138 m); the seed-11 wall excursion matches round 1. [Follow-up](../experiments/2026-10-05-transition-posture-iteration.md#follow-up-comparison-video-on-seen-seeds-2026-10-06).
+- **Next:** repair the invocation by using the literal `.venv/bin/python` path, finish
+  candidate image review, freeze it, evaluate still-unseen seeds 101/307/911 at 20/60 s,
+  and run the prepared small mjlab/live-control check. Then test avoidance across the
+  executed .4 s horizon and audit reachable upright walking-turn sequences. No new
+  session or jobs were created in this run. [Calibration remains open](../decisions/posture-height-calibration.md).
+- Historical preceding result: the [evening iteration](../experiments/2026-10-05-evening-graph-behavior-iteration.md)
+  improved held-out forward shares but retained spacing/response limits; its GPU
+  integration check applies to that earlier configuration, not the new controls.
+
+### Rigid mesh humans in the plaza (adopted and implemented 2026-10-06, D15)
+
+- **Decision (user):** full-resolution rigid Core-skin pieces, one per bone, with no
+  simplification, are the human geometry for LiDAR and display. They are the plaza
+  env-config default (`human_geometry`), which a training env will pick up; no
+  training env exists yet.
+  [Benchmark and timing](../experiments/2026-10-05-body-geometry-benchmark.md).
+- **How it works:**
+  - `crowd graph rotations` saves joint rotations per graph frame: artifact
+    `graph-rotations`, 0.32 GB, checked against the graph at load.
+  - `GraphCrowd` poses the pieces in one fused Warp pass (`sim.rays`).
+  - A Warp ray target, registered through our mjlab's new
+    `RayCastSensor.add_ray_target`, serves the LiDAR. The pieces are visual geoms in
+    group 1.
+  - The Viser demo builds both geometries; **Commands → Crowd body → Geometry**
+    switches what is shown and what the LiDAR hits.
+- **Cost (A40, 4,096 envs):** plaza step 57.3 ms (rigid) against 53.3 ms (capsules) at
+  16 humans, and 29.3 ms for both at 4 humans.
+- **Checks:**
+  - hits equal CPU MuJoCo `mj_ray` on the visual pieces (CPU and A40);
+  - the `mjlab_plaza` golden is unchanged (it pins capsules);
+  - the unit suite passes.
+
+  Browser interaction with the switch has not been exercised; a fake GUI drives it in
+  the tests.
+- **Still open:**
+  - one body shape: the morphology set (SOMA-X refit or retargeting) is undecided;
+  - robot contact geometry (the pieces have `contype` 0);
+  - ray budget and scan rate;
+  - an mjlab fix for mujoco_warp's off-centre mesh bounds (it affects traced robot
+    meshes, not the rigid humans).
 
 ### Graph audit and review tools (completed)
 
@@ -61,8 +202,8 @@ from an offline library.
   explicit analysis cutoffs. Availability differs from runtime visitation.
   [Conclusions](design/motion-library.md#behavior-audit-and-review-loop-2026-10-01)
   and [audit evidence](../experiments/2026-10-01-graph-behavior-audit.md).
-- The graph has no facing cost; plaza steering can redirect velocity abruptly and
-  still uses a shared RNG.
+- The saved graph's default score still has zero facing/heading weights. Optional
+  orientation terms now exist; legacy plaza goal/spawn RNG remains shared.
 
 ### Offline library and graph performance (historical prototype, 2026-09-30)
 
@@ -84,8 +225,9 @@ from an offline library.
   - [graph response delay](../decisions/graph-response-delay.md): eventual acceptable
     simulated-time delay; does not block baseline review;
   - [text encoder access](../decisions/text-encoder-access.md): styles;
-  - [human body model](../decisions/human-body-model.md): capsules vs mesh at 16k–65k
-    humans.
+  - [human body model](../decisions/human-body-model.md): LiDAR geometry settled
+    (D15, rigid pieces); still open: morphology source, robot contact geometry, ray
+    budget and scan rate.
 - **Remaining implementation candidates:**
   - mjlab smoke test: graph-driven humans in the crowd fixture with LiDAR, at m = 4–16;
     also measures simulator `S` at m = 16;
@@ -106,7 +248,7 @@ from an offline library.
     share it.
   - `graph/`: kNN motion graph tables, build, cost terms, runtime, audit.
   - `backends/`: ARDY and Kimodo adapters with typed configs and a registry.
-  - `iterate/`: evaluate, compare, sessions (local or Slurm). `bench/`, `library/`,
+  - `iterate/`: evaluate, diagnose, controlled response probes, compare, sessions (local or Slurm). `bench/`, `library/`,
     `metrics/`, `viz/`, `sim/` (scene, capsules, `mjlab/` plaza, demos, corridor fixture).
   - Configs: `configs/{behavior,graph,library,bench}`; recommended graph setting
     `configs/graph/default.json`.
@@ -127,17 +269,18 @@ from an offline library.
   ARDY from source; third-party pins in `third_party.toml`; see `AGENTS.md`.
 - **Weights:** ARDY Core H8 and H40, Kimodo-SOMA-RP-v1.1 and SOMA-X v0.3.2 assets, all
   local and offline (`artifacts.toml` names the HF revisions). ARDY-SOMA is unreleased.
-- **mjlab changes (first-party):** LiDAR pattern, minimum range and hit IDs, with their
-  tests and docs; the corridor fixture moved to `crowdmotion.sim.mjlab.corridor`. See
+- **mjlab changes (first-party):** LiDAR pattern, minimum range, hit IDs and ray
+  targets, with their tests and docs; the corridor fixture moved to `crowdmotion.sim.mjlab.corridor`. See
   [crowd architecture](design/crowd-architecture.md#corridor-fixture-and-our-mjlab-changes).
 
 ## Blockers and known issues
 
-- **Gated Llama-3** (403 for the HF account): no prompts, so walking style is
-  uncontrolled. Curation removes hunched gait but adds no styles.
-- **Behavior coverage and selection:** body-facing travel is uncontrolled by the
-  current path score; slow-turn coverage is scarce. Demo steering's shared RNG does
-  not meet per-human batch independence; the review tools preserve it for baseline.
+- **Gated Llama-3** (403 for the HF account): no prompts. Opt-in geometric posture
+  selection now exists, but semantic styles and its geometric calibration remain open.
+- **Behavior coverage and selection:** optional orientation costs improve forward
+  travel, but slow-turn coverage, long-rollout spacing, wall excursions and slower
+  path responses remain limitations. Shared legacy plaza RNG still does not meet
+  per-human batch independence; it was preserved as explicitly requested.
 - **No end-to-end measurement.** All speeds are isolated, on an A40. The simulator's
   own `S` at m = 16 with LiDAR is unmeasured.
 - **`fpo-control/`'s git index stages every file for deletion** (the files are on

@@ -33,15 +33,15 @@ lower ones (`tests/unit/test_layering.py` parses every import and checks this).
 |---|---|---|
 | L4 | `cli` | The `crowd` command table |
 | L3 | `iterate/` | Behavior evaluation (`evaluate`), paired comparison (`compare`), iteration sessions and their local and Slurm executors |
-| L3 | `library/` | Offline library generation (`generate`) |
+| L3 | `library/` | Offline library generation (`generate`; random or turning commands), turn checks of turning libraries (`turns`) |
 | L3 | `bench/` | Throughput, continuation quality, graph speed, simulator speed, summary tables |
-| L3 | `sim/mjlab/` | The mjlab integration: the `GraphCrowd` command term (`command`), the plaza environment (`plaza`), demos (`demo`), the corridor fixture (`corridor/`) |
-| L3 | `viz/` | Replay videos (`replay`), the graph audit report (`report`), stick-figure clips (`stick`), HTML templates |
-| L2 | `behavior/` | The crowd loop: `controller`, motion `sources`, command sources (`commands`, `plaza` = `intent` + `steering`), `planner`, velocity estimators (`kinematics`) |
-| L1 | `graph/` | The motion graph: `config`, `tables` (`MotionGraph`, `graph.pt`), `build` (kNN), `costs`, `runtime`, `audit` |
+| L3 | `sim/mjlab/` | The mjlab integration: the `GraphCrowd` command term (`command`), queued live controls (`tuning`), the plaza environment (`plaza`), demos (`demo`), the corridor fixture (`corridor/`) |
+| L3 | `viz/` | Replay videos (`replay`), the graph audit report (`report`), sampled posture/height sheets (`edge_review`), stick-figure clips (`stick`), HTML templates |
+| L2 | `behavior/` | The crowd loop: `controller`, motion `sources`, command sources (`commands`, `plaza` = `intent` + `steering`, `encounter`; `designs` builds either), `planner`, velocity estimators (`kinematics`) |
+| L1 | `graph/` | The motion graph: `config`, `tables` (`MotionGraph`, `graph.pt`), `build` (kNN, multi-library loading), `costs`, `runtime`, `audit`, turning coverage `turns`, derived `annotations`, independent `posture` state, saved joint `rotations` (`rotations.pt`, for rigid mesh humans) |
 | L1 | `backends/` | Online generator adapters: `base` (request/chunk contract), `registry` (typed configs, `make_backend`), `ardy`, `kimodo`, `text` |
 | L1 | `metrics/` | Locomotion direction classes, foot sliding, seams, posture, response times, spacing, graph diagnostics |
-| L1 | `sim/scene`, `sim/capsules` | The plaza scene builders and capsule humans, without mjlab |
+| L1 | `sim/scene`, `sim/capsules`, `sim/body`, `sim/rays` | The plaza scene builders, capsule humans, mesh humans (Core skin: skinning, decimation, rigid per-bone pieces, quaternion and swing helpers) and the Warp ray target for rigid humans, without mjlab |
 | L0 | `core/` | `rng` (per-human streams), `geometry`, `skeleton`, `trace`, `config`, `paths` (artifacts), `rundir`, `provenance`, `timing` |
 
 Two further import rules: only `sim.mjlab` imports mjlab at module level, and only
@@ -65,9 +65,9 @@ Humans are rows `[H]`. With `group = M`, rows are environment-major (`env * M + 
 
 | Consumer | Command source | Motion source | Velocity |
 |---|---|---|---|
-| `crowd behavior evaluate` | `PlazaBehavior` | `GraphMotionSource` | `BufferVelocity` |
-| mjlab `GraphCrowd` | `PlazaBehavior` | `GraphMotionSource` | `BufferVelocity` |
-| `crowd library generate` | `RandomCommands` | `OnlineMotionSource` (ARDY) | `WindowVelocity` |
+| `crowd behavior evaluate` | `PlazaBehavior` or `EncounterBehavior` | `GraphMotionSource` | `BufferVelocity` |
+| mjlab `GraphCrowd` | `PlazaBehavior` or `EncounterBehavior` | `GraphMotionSource` | `BufferVelocity` |
+| `crowd library generate` | `RandomCommands`, or `TurnCommands` (also the planner; heading targets as `root_heading`) | `OnlineMotionSource` (ARDY) | `WindowVelocity` |
 | `crowd bench quality` | `ScenarioCommands` | `GraphMotionSource` or `OnlineMotionSource` | `WindowVelocity` |
 | `crowd bench throughput` | random arcs (`planner.random_arc_paths`) | `OnlineMotionSource` | (no planner) |
 
@@ -82,6 +82,9 @@ A command source implements `command(t, kinematics, groups) -> (speed [H], headi
 
 - `RandomCommands`: per-human semi-Markov segments (stand, or walk at a sampled speed
   and heading change, optionally curving), from each human's own NumPy generator.
+- `TurnCommands`: per-human semi-Markov stand / walk / in-place turn / arc segments for
+  the turning library. Its `plan` method is the controller's planner (`planner.plan_arc`),
+  and `motion_options()` hands per-frame body-heading targets to the motion source.
 - `ScenarioCommands`: the quality benchmark's schedules (`cruise`, `stop_start`,
   `turn90`, `turn180`, `speed_step`), with per-human change offsets.
 - `PlazaBehavior`: intent then steering, the separation the project keeps between
@@ -90,6 +93,16 @@ A command source implements `command(t, kinematics, groups) -> (speed [H], headi
     arrival, sometimes wait;
   - `LocalSteering`: avoidance of neighbors by time to closest approach (with priority
     over the goal), a hard push at contact range, wall and obstacle repulsion.
+- `EncounterBehavior` (the `encounter` design): waypoint or velocity conditioning,
+  then a collision bubble with assertiveness- and distance-dependent switching into
+  committed interventions (sidestep, veer, pivot, yield), then a stop rule. It plans
+  with `planner.plan_arc`, so a gradual turn requests an arc of a chosen radius and a
+  zero speed turns in place. Through `motion_options` it asks the graph to hold a body
+  target during sidesteps and in-place turns. Its draws come from per-human counter
+  streams. Usage: [behavior designs](usage/behavior-iteration.md#behavior-designs).
+
+`behavior.designs.make_behavior` builds either design's command source and planner,
+which is how the evaluator, `GraphCrowd` and the demos select a design from a config.
 
 ### Motion sources
 
@@ -157,7 +170,7 @@ path, per-human seeds and counters, fresh-start state, text features) returns a
 Per-human randomness is counter-based: draw `counter` of human stream `seed` depends on
 nothing else (`core.rng`: SplitMix64 hashing, per-row torch generators), so results do
 not depend on batch size, order or composition. Graph sampling, start boundaries,
-diffusion noise and `RandomCommands` follow this rule.
+diffusion noise, `RandomCommands` and `TurnCommands` follow this rule.
 
 Stream ids come from `core.rng.human_seeds`, whose named schemes are the formulas
 existing outputs were made with (`quality`, `stream`, `evaluator`, `graphcrowd`).
@@ -179,11 +192,21 @@ deliberate behavior change.
 ## mjlab integration
 
 `sim.mjlab.plaza.make_plaza_env_cfg` builds a kinematic plaza: walls, a fixed LiDAR rig
-(360 × 16 rays) and capsule humans (one mocap body per bone, `sim.capsules`). The
-`GraphCrowd` command term (`sim.mjlab.command`) owns a `CrowdController`; each
-environment step it advances clocks, steps the controller for environments whose edge
-ran out, interpolates frames to the current time, converts them to MuJoCo Z-up and
-writes mocap poses. Because the crowd is a command term, every mjlab viewer shows it.
+(360 × 16 rays) and humans, by default rigid Core-skin meshes (`sim.body`), optionally
+capsules (`sim.capsules`) or both. The `GraphCrowd` command term (`sim.mjlab.command`)
+owns a `CrowdController`; each environment step it advances clocks, steps the
+controller for environments whose edge ran out, interpolates frames to the current
+time, converts them to MuJoCo Z-up and writes mocap poses. Because the crowd is a
+command term, every mjlab viewer shows it.
+
+Rigid humans pair the graph's joint positions with saved joint rotations
+(`graph.rotations`, checked against the graph at load). Their pieces are visual geoms
+outside the LiDAR's geom groups. The LiDAR sees them through a Warp ray target
+(`sim.rays`): one mesh per piece shared by all humans, a box test per human, then
+per-piece queries in bone frames. `GraphCrowd` registers it with mjlab's
+`RayCastSensor.add_ray_target` (a general hook in our mjlab) and recaptures the sense
+graph. The target merges by nearer hit, so `min_distance`, `max_distance` and geom ids
+keep their meaning.
 
 `sim.scene` builds the plaza for both mjlab and the replay renderer from one place. The
 two presets differ deliberately: the replay draws steering obstacles as cylinders,

@@ -43,6 +43,8 @@ dependencies = [
   # only runtime dependency it adds; its motion_correction extension is the
   # same code Kimodo already installs.
   "vector-quantize-pytorch>=1.25",
+  # Quadric mesh decimation for simulated human bodies (crowdmotion.sim.body).
+  "fast-simplification>=0.2.0",
 ]
 
 [project.scripts]

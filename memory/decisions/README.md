@@ -27,8 +27,9 @@ what would decide it; and links.
 | [Learning paradigm](learning-paradigm.md): RL in mjlab vs TANGO-style offline expert data plus imitation; sets whether a stitching runtime is needed for training or only for evaluation | user | the runtime's role; the robot-side expert (TANGO branch) |
 | [Library generator](library-generator.md): keep ARDY Core, add Kimodo/SOMA, or mix priors behind the chosen graph | empirical, then user | no; current graph uses ARDY |
 | [Graph response delay](graph-response-delay.md): acceptable simulated-time reaction delay after turning/steering changes | user, informed by measurements | no baseline review |
+| [Posture and height calibration](posture-height-calibration.md): geometric style classes, targets and acceptable flat-ground heights | empirical review, then user | calibrated promotion; no opt-in development |
 | [Text encoder access](text-encoder-access.md): gated Llama-3 blocks prompts; guidance with prompts would cost ARDY 1.9–2.8× | user | style prompts; the no-guidance setting |
-| [Human body model](human-body-model.md): ARDY Core skeleton and skin vs SOMA; LiDAR mesh vs collision proxies, now at 16k–65k humans | empirical, then user | geometry integration (stage 6) |
+| [Human body model](human-body-model.md): LiDAR geometry settled (D15: full-resolution rigid Core-skin pieces); morphology set, contact geometry, ray budget and scan rate open | user | morphology variety, robot contact |
 
 Retired 2026-09-30: demand budget (ledger D09) and backend choice (ledger D10), archived
 as [demand budget](../archive/2026-09-30-decision-demand-budget.md) and

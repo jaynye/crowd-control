@@ -1,10 +1,14 @@
 # Demos: the mjlab plaza
 
-A walled 14 × 10 m plaza in mjlab where graph-driven capsule humans walk to random goals
+A walled 14 × 10 m plaza in mjlab where graph-driven humans walk to random goals
 while a fixed LiDAR rig scans them. It is the integration check between the behavior
 layer, the motion graph and the simulator (one environment by default; not a training
 setup). Both demos read the saved graph: `--graph`, else `$CROWD_GRAPH`, else the
 `graph-default` artifact.
+
+Both demos accept `--config <behavior.json>` from the behavior evaluator. Its
+`steering` and `graph_overrides` are loaded, including the plaza half sizes;
+`--humans`, `--seed`, `--seconds` (video) and `--num-envs` (Viser) remain CLI settings.
 
 ## The scene
 
@@ -14,8 +18,21 @@ mjlab `ManagerBasedRlEnvCfg` with:
 - the plaza floor and walls (`sim.scene`; walls in geom group 2, visible to the LiDAR);
 - a scanner on a mast at (−6, 0) with an mjlab `RayCastSensor` using our
   `LidarPatternCfg`: 360 × 16 rays, 0.1–20 m;
-- `humans` capsule humans per environment: one mocap body per ARDY Core bone plus a
-  head cap (`sim.capsules`), in geom group 2.
+- `humans` humans per environment, in one or both body geometries (`human_geometry`,
+  `--geometry`):
+  - **rigid mesh** (the default): ARDY's Core skin at full resolution (18,152 faces),
+    cut into 22 rigid pieces, one per bone (`sim.body`). Each piece is a visual mesh
+    geom on a mocap body in geom group 1, which the LiDAR does not trace. The LiDAR
+    hits the pieces through a ray target that `GraphCrowd` registers with the sensor
+    (`sim.rays`; mjlab's `RayCastSensor.add_ray_target`), so hit geom ids still name
+    the body part.
+  - **capsules**: one mocap body per Core bone plus a head cap (`sim.capsules`), in
+    geom group 2, traced by MuJoCo.
+
+  Rigid humans need the graph's joint rotations, the `graph-rotations` artifact
+  (`$CROWD_GRAPH_ROTATIONS`; built by `crowd graph rotations`), and ARDY's Core skin
+  from the `third_party/ardy` clone. Without them the plaza fails with a message
+  naming the missing file; it never falls back to capsules.
 
 Everything is kinematic: contacts are disabled, and there is one physics step per 20 ms
 environment step.
@@ -24,8 +41,12 @@ The humans are driven by the **`GraphCrowd` command term** (`sim.mjlab.command`)
 environment step it advances the clock; at each 0.4 s edge it asks its
 `CrowdController` for the next edge (plaza intent and steering, root path, graph step);
 then it interpolates the 20 fps frames to the current time, converts them to MuJoCo Z-up
-`(x, -z, y)` and writes mocap poses. Poses are written after the environment's
-`forward()`, so sensors and viewers see them one step (20 ms) late. A reset draws new
+`(x, -z, y)` and writes mocap poses. Rigid pieces also take bone rotations: the saved
+rotation of each frame, turned by the edge's heading, blended between frames and
+swung onto the posed joints so pieces stay attached through blended transitions.
+Poses are written after the environment's `forward()`, so viewers and MuJoCo-traced
+geometry (capsules) appear to the LiDAR one step (20 ms) late; the rigid ray target
+reads the poses written this step. A reset draws new
 start states and goals. Debug overlays show goal discs, commanded-velocity arrows and
 LiDAR hits. Because the crowd is a command term, every mjlab viewer shows it.
 
@@ -83,3 +104,70 @@ On the cluster, `scripts/slurm/viser_graph_demo.sbatch` (GPU) and
 `VISER host=... port=...` line from the job log, then tunnel as above. Use the
 non-preemptible partition for live sessions. `scripts/slurm/viser_play.sbatch` serves
 any mjlab task in Viser the same way.
+
+## Switching body geometry
+
+The Viser demo builds both geometries, starting with `--geometry` (default `rigid`).
+Under **Commands → Crowd body**, the **Geometry** dropdown switches the humans shown
+and the geometry the LiDAR hits. The switch is queued and applied on the next
+simulation step: the other geometry is parked below the floor, and the rigid ray
+target is turned off for capsules. The video demo builds only the `--geometry` it is
+given.
+
+## Live behavior controls
+
+```bash
+crowd demo viser --config <candidate.json> --humans 16 --seed 0 --port 8080
+```
+
+Under **Commands → Crowd behavior**, edit sampling temperature, pose/entry-velocity/end-velocity/
+facing/heading costs, forward-steering lead and speed floor, evasive orientation
+release, turn-before-walk settings, native-yaw preservation, posture cost and
+switching rates, initial hunched share, the flat-ground mask toggle, and the
+planted-twist mask with its foot yaw limit. Higher
+forward preference makes ordinary lateral/backward selections less likely; it is
+a soft cost, not a ban. Posture settings and diagnostic definitions are described
+in [behavior iteration](behavior-iteration.md#posture-and-flat-ground-transitions).
+
+A config with `"design": "encounter"` runs the
+[encounter design](behavior-iteration.md#encounter-design). Its panel keeps the graph
+controls but replaces the plaza steering controls with encounter controls:
+
+- bubble radius, passing margin and look-ahead;
+- switch rate and urgency exponent;
+- the assertiveness range, which applies at the next reset;
+- patience;
+- strategy weights, far and near;
+- veer radii, head-on side preference, and in-place probability and radius range for
+  ordinary turns;
+- body radius, stop clearance, stop look-ahead and the waypoint wait probability.
+
+Tuple settings appear as one control per element. An edit that would make the
+settings invalid, such as a bubble no larger than body contact, or a mask setting that
+leaves no admissible edge, is rejected with a status message.
+
+On the opt-in turning graph, rigid humans need that graph's rotations as well
+(`CROWD_GRAPH_ROTATIONS`; [data](../data.md)):
+
+```bash
+G=$(.venv/bin/python -c "from crowdmotion.core.paths import artifact_path as a; print(a('graph-turns'))")
+R=$(.venv/bin/python -c "from crowdmotion.core.paths import artifact_path as a; print(a('graph-turns-rotations'))")
+CROWD_GRAPH_ROTATIONS=$R crowd demo viser --graph $G --config configs/behavior/encounter_turns.json --port 8080
+# on the cluster:
+sbatch --partition=rl2-lab --qos=short --export=ALL,CROWD_GRAPH_ROTATIONS=$R \
+    scripts/slurm/viser_graph_demo.sbatch $G --config configs/behavior/encounter_turns.json
+```
+
+Edits are queued from the GUI thread and applied on the simulation thread at the
+next 0.4 s motion edge, or before reset. While paused, advance or reset to apply
+pending changes. Controls affect all environments in that viewer. The initial
+posture distribution is used only at the next reset; rates change existing styles
+stochastically, without redrawing them. Enabling style midway through an episode
+cannot retroactively change its start pose. Masking a boundary with no admissible
+continuation holds the current pose until settings or reset restore one.
+
+Each crowd has a private runtime configuration even when saved graph tables are
+shared. The panel does not edit the config file or saved graph. Invalid angle pairs
+are rejected with a status message. Geometry, the baked `hunch_ratio`, graph
+neighbors and latent class calibration are not live controls. The bindings are
+testable headlessly; visual browser interaction still needs a human review.

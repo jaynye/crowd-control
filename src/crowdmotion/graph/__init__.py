@@ -15,10 +15,12 @@ frames. Stream frames [0, L) come from a fresh start and are not an edge.
 Modules:
 - `config`: `GraphConfig`;
 - `tables`: `MotionGraph` (descriptors, edge tables, persistence of `graph.pt`);
-- `build`: the kNN candidate build and `crowd graph build`;
+- `build`: the kNN candidate build, `crowd graph build` and multi-library loading
+  (`load_libraries`);
 - `costs`: candidate cost terms (`CostTerm`, `TERMS`);
 - `runtime`: `GraphState`, `GraphRuntime` (select, correct, inertialize);
-- `audit`: what the saved tables contain (`audit_graph`).
+- `audit`: what the saved tables contain (`audit_graph`);
+- `turns`: turning-radius coverage under a mask (`crowd graph turns`).
 
 Coordinates follow ARDY: Y-up, meters, heading 0 faces +Z, positive yaw turns
 toward +X. "Local" vectors are (lateral, forward) in a heading-aligned frame.

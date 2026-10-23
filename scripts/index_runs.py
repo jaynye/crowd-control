@@ -43,6 +43,8 @@ KINDS = (
     (r'throughput|bench_smoke', 'throughput sweep', 'throughput benchmark'),
     (r'ardy_profile', 'ARDY profile', 'ARDY profiling'),
     (r'sim_speed', 'simulator speed', 'simulator speed benchmark'),
+    (r'body_geometry', 'body geometry LiDAR benchmark', '`crowd bench body-geometry`'),
+    (r'graph_rotations', 'graph joint rotations', '`crowd graph rotations`'),
 )
 
 

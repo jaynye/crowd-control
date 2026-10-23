@@ -90,7 +90,9 @@ in `pyproject.toml`), installed editable, so edits take effect immediately.
   - `LidarPatternCfg`: an angular azimuth × elevation raster from one origin;
   - `RayCastSensorCfg.min_distance`: nearer returns report −1 and still occlude;
   - `RayCastData.geom_ids`: hit geom IDs for debugging (never a policy observation);
-  - `RayCastSensorCfg.VizCfg.stride`: draw every Nth ray.
+  - `RayCastSensorCfg.VizCfg.stride`: draw every Nth ray;
+  - `RayCastSensor.add_ray_target`: extra geometry cast inside the sense graph, nearer
+    hit wins (used by rigid mesh humans; tested in `mjlab/tests/test_raycast_sensor.py`).
 - Run mjlab's own tests from inside `mjlab/` with the shared environment:
   `cd mjlab && ../.venv/bin/python -m pytest tests/test_lidar_pattern.py`.
 

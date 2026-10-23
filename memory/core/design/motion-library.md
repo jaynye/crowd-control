@@ -15,7 +15,7 @@ The CPU audit of 134,820 valid edges found only 48.7% of moving frames forward,
 turning under the explicit analysis cutoffs; these are availability, not visitation
 figures ([audit](../../experiments/2026-10-01-graph-behavior-audit.md)).
 
-The current score has no facing/turn-before-walk cost, and demo steering can request
+The score audited on 2026-10-01 had no facing/turn-before-walk cost, and demo steering could request
 abrupt direction changes. Root tracking alone does not establish realistic forward
 walking. Deliberate turn coverage and graph selection both need review; the prior
 claim of no sideways/backward library motion was incorrect.
@@ -30,6 +30,74 @@ session worker/monitor and proposal are preserved for the next allocation.
 Synthetic metrics/persistence tests and replay scene setup pass. The evaluator
 preserves current demo RNG for baseline behavior; training still needs independent
 steering streams.
+
+Batch agent execution (2026-10-04): `crowd iterate agent` starts Codex and a nested
+local session after the GPU allocation begins, so scheduler waiting does not consume
+the iteration budget. The outer RunDir saves provenance, prompt, agent logs and final
+message; STOP, deadline and signals close the session and terminate processes.
+The batch wrapper and [setup](../../../docs/slurm.md#start-codex-automatically-in-a-batch-job)
+are prepared; fake-agent CPU validation does not establish rendering or realism gains.
+A fake CLI also cannot establish that the real one accepts the launch arguments: the
+first batch run failed on a flag conflict, so the launcher now preflights the exact
+argv and the model/effort catalog with the real Codex before opening a run.
+
+## Tested behavior controls (2026-10-05)
+
+The saved graph now supports optional facing/heading costs, a heading-error deadband,
+and shared forward steering with per-human avoidance priority. Defaults remain
+unchanged. The [evening iteration](../../experiments/2026-10-05-evening-graph-behavior-iteration.md)
+validated the pre-existing opt-in implementation and added the deadband without
+rebuilding the graph or loading a motion prior.
+
+- **Direction improved on held-out seeds:** 20 s moving-forward shares rose from
+  20–24% to 64–70%; 60 s ordinary-command travel was 81–83% forward. Speed decreased,
+  and foot sliding was mixed, so forward percentage alone is not an acceptance test.
+- **Spacing is unresolved:** the 60 s candidate regressed on two seeds, reaching a
+  0.501 m root gap despite both humans already having evasive priority. A short
+  paired rollout would have missed this; keep the candidate opt-in.
+- **Body turning has a path-response cost:** all 48 held-out 90°/180° probes turned
+  their bodies, but median root responses were 2.33/5.83 s. Committed sampled turns
+  alone completed 8/49 attempts and accumulated at walls; native forward-turn
+  candidates were available in only 25–39% of their large-turn states.
+- **Compatibility/integration:** the frozen baseline reproduces exactly; committed
+  HEAD and working defaults match 158 arrays and six JSON outputs on the same host.
+  Both retain historical golden numeric mismatches. A 2-env × 4-human A40 mjlab
+  check passed; neither this nor capsule stills establish training-scale readiness.
+
+## Load-time posture and flat-ground evidence (2026-10-05)
+
+The [transition iteration](../../experiments/2026-10-05-transition-posture-iteration.md)
+adds development evidence and opt-in code, not a promoted configuration. It stopped
+on frame-extraction failure before fresh held-out and new GPU integration checks.
+
+- Saved body-local Y is absolute ground height. Signed Hips–Neck pitch separates
+  torso lean more directly than head ratio; 62.6% of its variance lies between streams.
+  Reviewed 15° classes remain experimental, with [calibration open](../../decisions/posture-height-calibration.md).
+- A predecessor-inclusive height mask plus peak lower-foot criterion removes 3.02%
+  of valid edges, leaving no dead ends after retained edges. Executed blending still
+  needs measurement; empty candidate rows explicitly hold and report a fallback.
+- Soft sticky posture and matched starts reduce development class crossings from
+  18–19 to 4–6 per human-minute. Independent latent changes and actual pose-class
+  crossings are different metrics; a soft preference does not guarantee a class.
+- Only two upright and three hunched slow-turn edges survive. Slow explicit turn
+  phases stalled; walking-turn phases help controlled response but retain crowd
+  tradeoffs. Forward percentage alone cannot establish turn-then-walk success.
+- The candidate's 60 s ordinary forward share is 93.7–94.4% and peak lower-foot height
+  .112 m, but seed-0 gap worsens to .433 m and controlled completion drops to 47/48.
+  Keep it opt-in and preserve the earlier incumbent pending unfinished review.
+
+## Heading-conditioned turning supplement (2026-10-06)
+
+ARDY follows body-heading targets: its in-place turns reach 0.98 of the commanded
+hip-line angle, against 0.00 without targets. The opt-in `graph-turns` combines the base
+library with a 9.1 h turning library. Under the round-2 mask it holds 4,763 in-place
+edges without a planted twist (5,873 gross), against 8 in graph-default.
+
+Twists are not masked. In a twist the pelvis turns while the feet stay planted, and 19%
+of in-place edges and 32% of in-place windows contain one. The supplement also adds
+2,354 standing or straight edges that hold a twist, against 67 in the base, so humans
+can stand twisted without a turn request
+([turning library](../../experiments/2026-10-06-turning-library.md)).
 
 ## Design
 
@@ -46,17 +114,20 @@ steering streams.
     proposed, which avoids cluster-boundary effects.
 - **Runtime step**, per human and per edge:
   1. Score candidates by root-path error against the steering layer's requested path,
-     descriptor distance, and end-of-edge velocity error.
+     descriptor distance, and end-of-edge velocity error. Optional terms also score
+     body-relative forward travel and terminal body heading.
   2. Sample with per-human Gumbel noise.
   3. Bend the root path by at most ±5° yaw and ±10% speed.
   4. Decay the pose offset over the edge.
 
   Pure torch: no generator in the loop.
-- **Curation** is a library-side filter: edges with mean head height below 85% of
-  neutral are dropped (hunched gait from text-free ARDY).
-- **Behavior layer unchanged.** Intent and steering produce a world root path, exactly as
-  for the online backends (ledger D05). The graph is scored by the same quality harness
-  with the same commands and seeds.
+- **Curation** originally used a baked library-side head-height filter: edges with
+  mean head height below 85% of neutral are dropped. Reviewed load-time posture and
+  vertical annotations now provide separate opt-in runtime costs/masks without
+  changing that saved filter or graph format.
+- **Shared behavior layer.** Intent and steering produce a world root path as for
+  online backends (ledger D05); optional graph-orientation priorities flow through
+  `CrowdController`. Baseline intent/steering and RNG defaults remain unchanged.
 
 ## Conclusions
 
@@ -83,7 +154,7 @@ held-out seed with 128 humans
   - median command responses 0.0–0.4 s slower (turn-180: 1.1 vs 0.7 s; p95 2.1 vs
     0.95 s);
   - 1.6% of humans never complete a turn-180.
-- **Curation removes hunched gait, as intended.** The filter and the metric both use
+- **Historical head-height result, not torso-style calibration.** The filter and the metric both use
   head height, so this is true by construction: hunched output frames fall to
   0.2–0.6% (60 s: 0.4%). For comparison, online ARDY without text, replanned every
   0.4 s, stooped in 3–17% of frames over 12 s and 24% over 60 s (128 humans, quality
@@ -107,6 +178,7 @@ held-out seed with 128 humans
   - rare path excursions up to 18–29 cm.
 - **Not yet supported:**
   - local rotations, so no mesh skinning ([human body model](../../decisions/human-body-model.md));
-  - styles or prompts ([text encoder access](../../decisions/text-encoder-access.md));
+  - semantic styles or prompts ([text encoder access](../../decisions/text-encoder-access.md));
+    opt-in geometric upright/hunched selection was added in the later iteration above;
   - high-scale mjlab integration. The one-environment capsule demo now interpolates
     20 fps motion to the simulator rate; this is a visual integration check only.

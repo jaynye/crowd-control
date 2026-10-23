@@ -26,6 +26,28 @@ def plan_path(xz, vel, speed, heading, frames: int, fps: float, blend_s: float =
   return xz[:, None] + torch.cumsum(v, 1) / fps
 
 
+def plan_arc(xz, vel, speed, heading, yaw_rate, frames: int, fps: float, blend_s: float = 0.5,
+             max_turn: torch.Tensor | None = None):
+  """Path and per-frame heading for a command whose heading turns at `yaw_rate`.
+
+  The commanded heading starts at `heading` and turns at `yaw_rate` (rad/s, positive
+  toward +X), stopping after `max_turn` radians when given. Velocity blends from the
+  current velocity to the commanded one over `blend_s`, as in `plan_path`, so a
+  constant speed `v` traces an arc of radius `v / |yaw_rate|` and a zero speed turns
+  in place. Returns `(path [B, frames, 2], heading [B, frames])`.
+  """
+  t = torch.arange(1, frames + 1, device=xz.device, dtype=torch.float32) / fps
+  turn = yaw_rate[:, None] * t
+  if max_turn is not None:
+    turn = torch.maximum(torch.minimum(turn, max_turn[:, None]), -max_turn[:, None])
+  h = heading[:, None] + turn
+  target = speed[:, None, None] * torch.stack((torch.sin(h), torch.cos(h)), -1)
+  alpha = (torch.arange(1, frames + 1, device=xz.device, dtype=torch.float32)
+           / max(1.0, blend_s * fps)).clamp(max=1.0)[None, :, None]
+  v = (1 - alpha) * vel[:, None] + alpha * target
+  return xz[:, None] + torch.cumsum(v, 1) / fps, h
+
+
 def random_arc_paths(
   start_xz: torch.Tensor,
   start_heading: torch.Tensor,

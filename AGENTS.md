@@ -58,8 +58,8 @@ cite docs and code.
   Put a new behavior rule in a command source, planner, motion source or graph cost term,
   never in one consumer, so evaluation and simulation cannot diverge.
 - **Layers.** Imports point down: L0 `core`; L1 `graph`, `backends`, `metrics`,
-  `sim.scene`, `sim.capsules`; L2 `behavior`; L3 `iterate`, `library`, `bench`,
-  `sim.mjlab`, `viz`; L4 `cli`. Only `sim.mjlab` imports mjlab at module level and only
+  `sim.scene`, `sim.capsules`, `sim.body`, `sim.rays`; L2 `behavior`; L3 `iterate`,
+  `library`, `bench`, `sim.mjlab`, `viz`; L4 `cli`. Only `sim.mjlab` imports mjlab at module level and only
   `backends` imports ARDY or Kimodo. `tests/unit/test_layering.py` enforces this.
 - **Goldens.** `tests/golden/expected/` pins today's outputs bit for bit (CPU, one
   thread). A refactor must keep them matching. Never re-capture them to make a change
@@ -68,6 +68,21 @@ cite docs and code.
 - **Randomness.** Per-human streams come from `core.rng`; seed formulas are named schemes
   in `human_seeds`. `PlazaBehavior` still shares one generator (kept for the baselines);
   switching it to per-human streams is a planned behavior change.
+- **Saved-graph annotations.** Derive posture and flat-ground measurements from the
+  saved tables; body-local Y is absolute ground height. New masks and style/turn costs
+  are opt-in and do not mutate baked validity or the saved graph format. Posture uses
+  the independent `graph_posture` stream; its initial distribution applies at reset.
+  An all-masked boundary explicitly holds its current pose and reports the fallback.
+- **Rigid mesh humans.** Full-resolution rigid Core-skin pieces are the plaza default
+  (ledger D15). Their bone rotations live beside the graph (`crowd graph rotations`,
+  artifact `graph-rotations`). A rebuilt graph needs rebuilt rotations: the load check
+  rejects a mismatch. Never fall back to capsules silently when rotations or the Core
+  skin are missing. The pieces are visual geoms (group 1) seen through a ray target:
+  no ray-cast sensor may trace their group (`GraphCrowd` raises), or mujoco_warp's
+  slow mesh path returns.
+- **Live crowd settings.** Each `GraphCrowd` owns its mutable runtime configuration;
+  cached graph tables may be shared. GUI callbacks enqueue edits for the simulation
+  thread to apply at edge boundaries or before reset, never during selection.
 - **Commands and outputs.** New tools are `crowd` commands (`src/crowdmotion/cli.py`)
   that write a fresh `runs/<UTC>_<name>/` through `core.rundir.RunDir` (status, config,
   environment, git commit and diff). Configs reject unknown keys: typed dataclasses via
@@ -154,6 +169,27 @@ cite docs and code.
   Ordinary travel should be mostly forward, with turning motion for direction changes;
   lateral/backward motion is deliberate, including abrupt close avoidance. Measure
   travel relative to body facing rather than treating curved forward paths as sidesteps.
+- **Transitions, posture and live tuning (user, 2026-10-05):** ordinary direction
+  changes should mostly be a body turn (for example about 90°) followed by forward
+  walking; sidestepping is uncommon, and its rarity is a tunable stochastic parameter.
+  Each human has a posture style (upright or hunched) that persists stochastically: it
+  is drawn at spawn from a configurable initial distribution strongly biased toward
+  upright, then mostly kept. Stochasticity parameters should be adjustable live in the
+  Viser demo. On the flat ground plane, motion must not drastically change a human's
+  vertical position; terrain such as stairs comes later.
+- **Encounter design (user, 2026-10-06):** keep the original random-goal plaza design and
+  add an alternate `encounter` design (`behavior/designs.py`) that the iteration agent can
+  also work on. Its parts:
+  - waypoint or velocity conditioning, with random waypoints for comparison;
+  - a configurable collision bubble;
+  - a per-step switch probability set by each human's assertiveness and the distance of
+    the closest point in the bubble;
+  - committed interventions: sidestep, gradual and in-place turns, and yield;
+  - humans stop before they collide, with a starting tolerance of 1 cm.
+
+  Two humans may decide at once; do not add a tie-break. Turning motions of various
+  radii, including in-place turns, should exist; generate them offline where the library
+  lacks them. Encounter randomness uses the per-human `encounter` seed scheme.
 - Benchmarks measure **usable** motion: count only newly generated frames (ARDY returns
   history + horizon), apply the consumed fraction `u`, exclude model loading, GUI and
   export from steady-state timing, and report startup separately. Label isolated
