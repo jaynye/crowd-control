@@ -2,7 +2,8 @@
 
 Provides :class:`RayCastSensor` and :class:`RayCastSensorCfg` for BVH-accelerated
 raycasting with grid, pinhole camera, ring, and LiDAR patterns. Supports multi-frame
-attachment, configurable ray alignment, and geom group filtering.
+attachment, configurable ray alignment, geom group filtering, and extra ray targets
+(geometry outside the MuJoCo model, cast inside the same sense graph).
 
 See :doc:`/sensors/raycast_sensor` for usage guide and examples.
 """
@@ -10,6 +11,7 @@ See :doc:`/sensors/raycast_sensor` for usage guide and examples.
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
@@ -29,6 +31,10 @@ if TYPE_CHECKING:
   from mjlab.viewer.debug_visualizer import DebugVisualizer
 
 RayAlignment = Literal["base", "yaw", "world"]
+
+RayTarget = Callable[[wp.array, wp.array, wp.array, wp.array, wp.array], None]
+"""Extra ray geometry: ``target(pnt, vec, dist, geomid, normal)``. See
+:meth:`RayCastSensor.add_ray_target`."""
 
 # NOTE: Not publicly exposed by mujoco_warp.
 _vec6 = wp.types.vector(length=6, dtype=float)
@@ -540,6 +546,7 @@ class RayCastSensor(Sensor[RayCastData]):
 
     self._debug_vis_enabled: bool = True
     self._ctx: SensorContext | None = None
+    self._ray_targets: list[RayTarget] = []
 
   def edit_spec(
     self,
@@ -631,6 +638,19 @@ class RayCastSensor(Sensor[RayCastData]):
   @property
   def include_geom_groups(self) -> tuple[int, ...] | None:
     return self.cfg.include_geom_groups
+
+  def add_ray_target(self, target: RayTarget) -> None:
+    """Register extra geometry that this sensor's rays also hit.
+
+    ``target(pnt, vec, dist, geomid, normal)`` runs right after the MuJoCo raycast, on
+    the same ``[num_envs, num_rays]`` Warp buffers: ray origins and directions, then
+    the hit distance (-1 for no hit so far), geom id and world normal of each ray. It
+    must launch Warp work only and overwrite a ray's outputs only where it finds a
+    nearer hit, so ``min_distance`` and ``max_distance`` keep their meaning. Its own
+    buffers must stay at fixed addresses. On CUDA the sense graph is captured when the
+    simulation starts: call ``Simulation.create_graph()`` after registering.
+    """
+    self._ray_targets.append(target)
 
   def set_context(self, ctx: SensorContext) -> None:
     """Wire this sensor to a SensorContext for BVH-accelerated raycasting."""
@@ -839,6 +859,10 @@ class RayCastSensor(Sensor[RayCastData]):
       normal=self._ray_normal,  # type: ignore[invalid-argument-type]
       rc=rc,
     )
+    for target in self._ray_targets:
+      target(
+        self._ray_pnt, self._ray_vec, self._ray_dist, self._ray_geomid, self._ray_normal
+      )
 
   def postprocess_rays(self) -> None:
     """POST-GRAPH: Convert Warp outputs to PyTorch, compute hit positions."""

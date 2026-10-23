@@ -231,6 +231,20 @@ useful for ignoring visual-only geoms or isolating terrain geometry.
     )
 
 
+Ray targets
+-----------
+
+``RayCastSensor.add_ray_target(target)`` adds geometry that is not in the MuJoCo
+model, for example many rigid meshes posed by user code. After the MuJoCo raycast,
+inside the same sense graph, the sensor calls
+``target(pnt, vec, dist, geomid, normal)`` on its ``[B, N]`` Warp buffers. The target
+launches Warp kernels that overwrite a ray only where they find a nearer hit
+(``dist < 0`` means no hit yet), so ``min_distance``, ``max_distance`` and
+``geom_ids`` keep their meaning. Its buffers must stay at fixed addresses. On CUDA the
+sense graph is captured when the simulation starts, so call
+``Simulation.create_graph()`` after registering.
+
+
 Output
 ------
 

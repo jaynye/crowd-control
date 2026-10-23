@@ -116,6 +116,25 @@ class CurriculumManager(ManagerBase):
       state = term_cfg.func(self._env, env_ids, **term_cfg.params)
       self._curriculum_state[name] = state
 
+  def state_dict(self) -> dict[str, Any]:
+    """State of the class-based terms that define ``state_dict()``, by term name.
+
+    A term whose progress is not a function of ``common_step_counter`` (an adaptive
+    curriculum, for example) saves it here so a resumed run continues from it.
+    """
+    return {
+      name: term_cfg.func.state_dict()
+      for name, term_cfg in zip(self._term_names, self._term_cfgs, strict=False)
+      if callable(getattr(term_cfg.func, "state_dict", None))
+    }
+
+  def load_state_dict(self, state: dict[str, Any]) -> None:
+    """Restore ``state_dict()``; terms absent from ``state`` keep their state."""
+    for name, term_cfg in zip(self._term_names, self._term_cfgs, strict=False):
+      load = getattr(term_cfg.func, "load_state_dict", None)
+      if name in state and callable(load):
+        load(state[name])
+
   def _prepare_terms(self):
     for term_name, term_cfg in self.cfg.items():
       term_cfg: CurriculumTermCfg | None
@@ -152,4 +171,10 @@ class NullCurriculumManager:
     return {}
 
   def compute(self, env_ids: torch.Tensor | None = None) -> None:
+    pass
+
+  def state_dict(self) -> dict[str, Any]:
+    return {}
+
+  def load_state_dict(self, state: dict[str, Any]) -> None:
     pass

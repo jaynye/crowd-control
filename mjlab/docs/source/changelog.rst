@@ -10,6 +10,13 @@ Added
 
 - Added an angular LiDAR ray pattern, minimum range filtering, and hit geometry
   IDs for sensor debugging.
+- Added ``RayCastSensor.add_ray_target`` for geometry outside the MuJoCo model (for
+  example many rigid meshes posed by user code). A target runs inside the sense graph
+  right after the MuJoCo raycast and keeps the nearer hit per ray.
+- Added ``CurriculumManager.state_dict`` and ``load_state_dict``: class-based
+  curriculum terms that define them (an adaptive curriculum, whose progress is not a
+  function of ``common_step_counter``) have their state saved in checkpoints by
+  ``MjlabOnPolicyRunner`` and restored on load.
 
 Changed
 ^^^^^^^

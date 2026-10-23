@@ -20,6 +20,7 @@ import mjlab.scripts.train as train_mod
 from mjlab.actuator import XmlActuatorCfg
 from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
 from mjlab.envs import ManagerBasedRlEnv, ManagerBasedRlEnvCfg, mdp
+from mjlab.managers.curriculum_manager import CurriculumManager, CurriculumTermCfg
 from mjlab.managers.observation_manager import ObservationGroupCfg, ObservationTermCfg
 from mjlab.rl import RslRlOnPolicyRunnerCfg, RslRlVecEnvWrapper
 from mjlab.rl.runner import MjlabOnPolicyRunner
@@ -121,6 +122,51 @@ def test_runner_persists_common_step_counter(env, device, monkeypatch):
     runner.load(checkpoint_path)
 
     assert wrapped_env.unwrapped.common_step_counter == 12345
+
+
+class _AdaptiveLevel:
+  """A curriculum term whose progress is not a function of common_step_counter."""
+
+  def __init__(self, cfg, env):
+    del cfg, env
+    self.level = 0.0
+
+  def __call__(self, env, env_ids):
+    del env, env_ids
+    return {"level": self.level}
+
+  def state_dict(self):
+    return {"level": self.level}
+
+  def load_state_dict(self, state):
+    self.level = state["level"]
+
+
+def test_runner_persists_curriculum_state(env, device, monkeypatch):
+  """Curriculum terms that define state_dict() are saved and restored."""
+  cfg = {"adaptive": CurriculumTermCfg(func=_AdaptiveLevel, params={})}
+  manager = CurriculumManager(cfg, env)
+  monkeypatch.setattr(env, "curriculum_manager", manager)
+  wrapped_env = RslRlVecEnvWrapper(env)
+  agent_cfg = RslRlOnPolicyRunnerCfg(
+    num_steps_per_env=4, max_iterations=10, save_interval=5
+  )
+
+  with tempfile.TemporaryDirectory() as tmpdir:
+    runner = MjlabOnPolicyRunner(
+      wrapped_env, asdict(agent_cfg), log_dir=tmpdir, device=device
+    )
+    monkeypatch.setattr(runner.logger, "save_model", lambda *args, **kwargs: None)
+
+    term = manager.get_term_cfg("adaptive").func
+    term.level = 0.35
+    checkpoint_path = str(Path(tmpdir) / "test_checkpoint.pt")
+    runner.save(checkpoint_path)
+
+    term.level = 0.0
+    runner.load(checkpoint_path)
+
+    assert term.level == 0.35
 
 
 def test_runner_handles_old_checkpoints_without_env_state(env, device):

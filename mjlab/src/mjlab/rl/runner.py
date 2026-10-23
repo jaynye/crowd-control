@@ -68,9 +68,14 @@ class MjlabOnPolicyRunner(OnPolicyRunner):
     """Save checkpoint.
 
     Extends the base implementation to persist the environment's
-    common_step_counter and to respect the ``upload_model`` config flag.
+    common_step_counter and curriculum state, and to respect the ``upload_model``
+    config flag.
     """
-    env_state = {"common_step_counter": self.env.unwrapped.common_step_counter}
+    env = self.env.unwrapped
+    env_state = {
+      "common_step_counter": env.common_step_counter,
+      "curriculum": env.curriculum_manager.state_dict(),
+    }
     infos = {**(infos or {}), "env_state": env_state}
     # Inline base OnPolicyRunner.save() to conditionally gate W&B upload.
     saved_dict = self.alg.save()
@@ -90,7 +95,8 @@ class MjlabOnPolicyRunner(OnPolicyRunner):
     """Load checkpoint.
 
     Extends the base implementation to:
-    1. Restore common_step_counter to preserve curricula state.
+    1. Restore common_step_counter and the curriculum terms' saved state to
+      preserve curricula state.
     2. Migrate legacy checkpoints (actor.* -> mlp.*, actor_obs_normalizer.*
       -> obs_normalizer.*) to the current format (rsl-rl>=4.0).
     """
@@ -137,5 +143,7 @@ class MjlabOnPolicyRunner(OnPolicyRunner):
 
     infos = loaded_dict["infos"]
     if infos and "env_state" in infos:
-      self.env.unwrapped.common_step_counter = infos["env_state"]["common_step_counter"]
+      env = self.env.unwrapped
+      env.common_step_counter = infos["env_state"]["common_step_counter"]
+      env.curriculum_manager.load_state_dict(infos["env_state"].get("curriculum", {}))
     return infos
