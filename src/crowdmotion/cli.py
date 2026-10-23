@@ -52,6 +52,16 @@ COMMANDS: dict[str, dict[str, tuple[str, str, tuple[str, ...]]]] = {
     "sim-speed": ("crowdmotion.bench.sim_speed", "simulator speed reference points (mjlab)", ()),
     "body-geometry": ("crowdmotion.bench.body_geometry", "LiDAR cost and fidelity of human body geometries", ()),
   },
+  "train": {
+    "traversal": ("crowdmotion.sim.mjlab.train", "train the crowd traversal policy (G1, LiDAR, graph crowd)", ()),
+  },
+  "play": {
+    "traversal": ("crowdmotion.sim.mjlab.play", "watch a trained traversal policy in a viewer or render it to MP4", ()),
+  },
+  "eval": {
+    "traversal": ("crowdmotion.sim.mjlab.evaluate", "measure traversal policies: command following, collisions, falls",
+                  ()),
+  },
   "demo": {
     "video": ("crowdmotion.sim.mjlab.demo", "render the mjlab plaza with LiDAR to MP4", ("video",)),
     "viser": ("crowdmotion.sim.mjlab.demo", "serve the mjlab plaza in a Viser browser viewer", ("viser",)),
