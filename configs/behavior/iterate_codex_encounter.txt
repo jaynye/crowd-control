@@ -1,0 +1,138 @@
+Iteratively improve the realism of the encounter behavior design on the turning motion
+graph within the launcher's time budget. Read and follow the repository's AGENTS.md
+first, including the 2026-10-06 user direction on the encounter design. The launcher has
+already created a local iteration session; use the path and deadline in the appended
+launcher context. Do not create another session or submit any Slurm jobs. Evaluation,
+replay and comparison run here on the allocated compute node.
+
+Start by inspecting the working tree, the project status that AGENTS.md points to, and
+the encounter-design and turning-library experiment notes it links. Keep any
+pre-existing work. Record the outer run in the project's run log before starting
+experiments, and follow the project memory workflow throughout. Keep all experimental
+outputs, candidate configs, visual-review frames and reports within this run. Never
+overwrite outputs. Use crowd iterate run with unique request names, per-request
+timeouts and explicit rule notes for each evaluation, render and comparison. Use crowd
+iterate note for plans, observations and decisions. Continue through several
+evidence-based iterations when time permits; completing the references alone does not
+complete this task.
+
+Graph. This run uses the opt-in merged graph, artifact graph-turns, with its joint
+rotations, artifact graph-turns-rotations (paths in artifacts.toml). The submission
+exports CROWD_GRAPH and CROWD_GRAPH_ROTATIONS for them, and the launcher context names
+the graph. Before the first evaluation, verify that both variables resolve to these
+artifact paths; if they do not, record the failure and exit. Also pass --graph with the
+launcher's path to every evaluation. The golden tests and some unit tests read
+CROWD_GRAPH: run them under env -u CROWD_GRAPH -u CROWD_GRAPH_ROTATIONS so they use
+graph-default. A golden mismatch means a regression to fix, never a reason to
+re-capture.
+
+The design. Humans follow waypoint or velocity conditioning (random waypoints here),
+detect threats in a configurable collision bubble, switch with a per-step probability
+set by their assertiveness and the closest distance in the bubble, keep a committed
+intervention (sidestep, veer, pivot or yield), make ordinary direction changes as
+gradual or in-place turns, and stop before colliding with a 1 cm target clearance. Two
+humans may decide at once; do not add a tie-break. Every rule and output is in
+docs/usage/behavior-iteration.md under behavior designs.
+
+Starting evidence, from the experiment notes, to verify rather than assume. On
+graph-turns (development seeds 0/1/2, 60 s), configs/behavior/encounter.json:
+
+- in-place turns now execute (median 83 deg/s against 2.8 deg/s on graph-default), and
+  ordinary redirects resolved as turn then forward roughly triple (45-47 per seed),
+  but 63-64 per seed remain unresolved;
+- joint-sphere contact regresses to -0.022 to -0.070 m (0.3-5% of frames), and every
+  20 s crowd seed touches; planted-foot speed p95 rises to 0.38-0.40 m/s and
+  acceleration p95 to 3.3-3.4 m/s^2; the two-human probes stay contact-free;
+- in-place clips still translate (median 0.24 m/s) and arms swing during turns;
+- 2-4% of executed edges are planted twists (the pelvis turns or stays turned while the
+  feet stay planted), almost all of them slow or standing;
+- on graph-default, three or four humans jammed for more than 10 s from about 45 s in
+  seed 0; whether this persists on graph-turns is unchecked.
+
+A previous run added an opt-in planted-twist mask (GraphConfig twist_mask and
+twist_max_foot_yaw_deg, 21.4 deg; graph/annotations.py annotate_twist). It removes
+3,533 graph-turns edges (1,110 in place, 2,421 straight or standing) with no new dead
+ends, and is a live Viser control. configs/behavior/encounter_turns.json is
+encounter.json plus that mask. Against encounter.json it removes executed twists and
+raises the minimum joint-sphere clearance in all six unpaired 20 s and 60 s crowd runs
+(60 s: -0.027 / -0.010 / +0.043 m, seed 0 still in contact in 3.8% of frames); sliding,
+acceleration and unresolved redirects are unchanged. The all-contact condition keeps
+some severe foot/body lag where one contact label releases. A rigid mjlab run on
+graph-turns with this config works (minimum root gap 0.69 m).
+
+Work in this priority order, and record any item you do not finish as unfinished:
+
+1. Twist mask follow-up, time-boxed. Check from traces whether the heading or turn
+   costs favor twisted clips over stepping turns that drift a few centimeters, and
+   whether the kept one-label-released lag edges are visible in replay. Change the
+   mask's definition only on that evidence, as a new default-off option.
+
+2. Contact and sliding on graph-turns. Trace the contacts first: which pairs, which
+   strategies and phases, which clips, and whether execution lag, in-place translation
+   or arm swing causes them. Then change one mechanism at a time. Candidate levers
+   include the stop look-ahead, approach_time_s, body_radius_m, clearance_weight and
+   start_vel_weight. Judge each change on joint-sphere clearance and
+   contact frames together with planted-foot speed, acceleration, mean speed and the
+   minimum root gap. The 1 cm stop clearance is the user's starting value: report
+   evidence about it rather than changing its default.
+
+3. Redirects and jams. Explain the remaining unresolved ordinary redirects from traced
+   examples, and check for multi-human jams in the 60 s runs. Fix causes in the shared
+   layers if the evidence supports a rule.
+
+4. Decision realism. Check the switch percentage given a threat against urgency and
+   assertiveness, the strategy mix, stop episodes, and the bubble radius and passing
+   margin against spacing and speed. These are heuristics with no human calibration;
+   report what changes, not a calibrated claim.
+
+5. mjlab check, if a candidate is ready: one short crowd demo video run of the selected
+   config with rigid mesh humans on graph-turns (CROWD_GRAPH_ROTATIONS must pair with
+   the graph; the load check rejects a mismatch). If a new setting is safe to change
+   live, add it to the Viser encounter controls and test the binding headless; you
+   cannot see the browser, so state that the interactive view is unverified by you.
+
+Evaluation. Before changing runtime behavior, freeze copies of the references in this
+run and evaluate them on graph-turns. The crowd references run on the development seeds
+0, 1 and 2 at 20 s and 60 s: configs/behavior/encounter_turns.json (the incumbent),
+configs/behavior/encounter.json (without the mask) and
+configs/behavior/plaza_forward_posture.json as a reference for the original design. The
+two-human probes configs/behavior/encounter_head_on.json and encounter_crossing.json run
+as configured (8 seeds, 10 s). crowd behavior compare requires the same graph, so
+graph-default results can only be quoted from the notes, not compared. Implement one
+mechanism at a time in the shared command source, planner, motion source or graph cost
+and mask layers, keeping every crowd consumer on CrowdController. Evaluate each
+candidate against the references on matching seeds, and run diagnose on each. Review the
+encounter block, joint-sphere clearance, spacing, acceleration, foot sliding, pose
+seams, direction shares relative to body facing and the redirect metric together. Seeds
+101, 307 and 911 are the unseen held-out bank: use them once, only for the selected
+configuration after you freeze it, at 20 s and 60 s.
+
+Visual review. Render saved rollouts in overview and follow views, extract
+representative still frames into the run, and inspect them with available image tools.
+Include follow views of in-place turns, pivots, sidesteps, close passes and any contact
+you traced. An existing MP4 alone does not establish
+visual review; state any limitation of the inspection tools. Do not invent pass
+thresholds or claim that untested proposals improved behavior.
+
+Use the saved graphs; do not load motion priors, rebuild the library or graph, change
+third-party clones or dependencies, or expand into training. Every new mechanism
+defaults off. The plaza design must stay bit-exact, and all golden expected files stay
+unchanged. Encounter randomness stays on the per-human encounter seed scheme. Do not
+switch plaza RNG schemes or make GraphConfig strict as part of this task. Do not
+commit, push, publish or send messages.
+
+Check the deadline before every expensive action. Stop experiments with enough time
+left to run the relevant CPU tests and goldens, finalize the run-log outcome and project
+memory (experiment note, status, affected design notes, docs for new settings), and
+write a concise report in the outer run. Distinguish tested improvements, rejected
+candidates and unresolved limitations; cite the associated outputs. The final response
+should identify code changes, measurements, visually inspected seeds and views,
+validation and the next useful experiment.
+
+Failures. A failing script or test that you wrote is a bug to fix and rerun under a new
+request name, not a reason to stop. Only a failure you cannot fix in this task ends the
+run early: graph or artifact access, rendering, the crowd tools themselves, or Codex
+access. Then record it, finish the bookkeeping and the report, and exit; never present
+proposals as results. Never run crowd iterate stop: it terminates this agent at once,
+before the report and bookkeeping are written. The launcher closes the session when
+you exit.

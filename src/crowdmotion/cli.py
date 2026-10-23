@@ -35,6 +35,7 @@ COMMANDS: dict[str, dict[str, tuple[str, str, tuple[str, ...]]]] = {
     "compare": ("crowdmotion.iterate.compare", "paired seed metrics and a review page", ()),
   },
   "iterate": {
+    "agent": ("crowdmotion.iterate.agent", "run a bounded Codex behavior iteration session", ()),
     "start": ("crowdmotion.iterate.session", "open an iteration session (one run folder)", ("start",)),
     "run": ("crowdmotion.iterate.session", "queue or run a named request in a session", ("run",)),
     "status": ("crowdmotion.iterate.session", "show a session's requests and results", ("status",)),
