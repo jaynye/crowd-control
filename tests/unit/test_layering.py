@@ -1,7 +1,7 @@
 """Package layering: imports inside `crowdmotion` only point to the same or a lower layer.
 
 L0 core; L1 graph, backends, metrics, sim.scene, sim.capsules; L2 behavior;
-L3 iterate, library, bench, sim.mjlab, viz; L4 cli. Only `sim.mjlab` may import
+L3 iterate, library, bench, sim.mjlab, viz, tracking; L4 cli. Only `sim.mjlab` may import
 mjlab at module level, and only `backends` may import ardy or kimodo.
 """
 
@@ -21,7 +21,7 @@ LAYERS = {
   "core": 0,
   "graph": 1, "backends": 1, "metrics": 1, "sim": 1, "sim.scene": 1, "sim.capsules": 1,
   "behavior": 2,
-  "iterate": 3, "library": 3, "bench": 3, "sim.mjlab": 3, "viz": 3,
+  "iterate": 3, "library": 3, "bench": 3, "sim.mjlab": 3, "viz": 3, "tracking": 3,
   "cli": 4,
 }
 

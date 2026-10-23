@@ -5,12 +5,17 @@
 
 `run.json` holds status (running, then completed or failed with the error),
 the caller's record fields and `environment()`. A dirty git tree also leaves
-`source.diff`. Directories are never reused.
+`source.diff`. Directories are never reused, with one exception: a training
+lineage (`crowd train traversal --run`) resumes its attempts in its own directory
+(`RunDir.open`), each recorded in `run.json`'s `attempts`. `run.json` is written
+atomically, so a reader never sees a partial file.
 """
 
 from __future__ import annotations
 
 import json
+import os
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -23,9 +28,12 @@ def utc_stamp() -> str:
 
 
 def write_json(path: Path, payload) -> None:
+  """Write through a temporary file and a rename: readers see the old or the new file."""
   path = Path(path)
   path.parent.mkdir(parents=True, exist_ok=True)
-  path.write_text(json.dumps(payload, indent=2, default=str))
+  tmp = path.with_name(f".{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")  # default permissions
+  tmp.write_text(json.dumps(payload, indent=2, default=str))
+  os.replace(tmp, path)
 
 
 class RunDir:
@@ -60,6 +68,12 @@ class RunDir:
     run = cls(path, rec)
     run.save()
     return run
+
+  @classmethod
+  def open(cls, path: Path) -> "RunDir":
+    """An existing run directory, with its `run.json` record (a training lineage's next attempt)."""
+    path = Path(path)
+    return cls(path, json.loads((path / "run.json").read_text()))
 
   def save(self) -> None:
     write_json(self.path / "run.json", self.record)

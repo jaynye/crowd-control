@@ -6,7 +6,8 @@
     .venv/bin/python scripts/index_runs.py --slurm    # Slurm job IDs named in run logs
 
 `runs/` is local and not tracked in git; the run log is the tracked index. Each run
-directory `runs/<UTC stamp>_<name>/` gets one row. Rows are drafted from the run's
+directory `runs/<UTC stamp>_<name>/` gets one row; a training lineage resumed in place
+(`crowd train traversal --run`) keeps its one row, with its attempts' Slurm jobs. Rows are drafted from the run's
 `run.json` (and `session.json`, `summary.json`, file names); the outcome column is
 written by hand from the experiment note or journal. `--check` passes when `runs/` is
 absent, for example on a fresh clone.
@@ -43,6 +44,10 @@ KINDS = (
     (r'throughput|bench_smoke', 'throughput sweep', 'throughput benchmark'),
     (r'ardy_profile', 'ARDY profile', 'ARDY profiling'),
     (r'sim_speed', 'simulator speed', 'simulator speed benchmark'),
+    (r'body_geometry', 'body geometry LiDAR benchmark', '`crowd bench body-geometry`'),
+    (r'graph_rotations', 'graph joint rotations', '`crowd graph rotations`'),
+    (r'train_traversal', 'robot policy training lineage', '`crowd train traversal`'),
+    (r'play_traversal', 'policy visualization', '`crowd play traversal`'),
 )
 
 
@@ -96,11 +101,17 @@ def draft_row(root: Path, run: Path, artifacts: dict[str, str]) -> str:
     if config.get('name'):
         command += f"; config `{config['name']}`"
     job = env.get('slurm_job') or record.get('slurm_job') or '—'
+    attempts = record.get('attempts') or []
+    jobs = [str(a['slurm_job']) for a in attempts if a.get('slurm_job')]
+    if jobs:  # a training lineage: every job that ran an attempt
+        job = ', '.join(dict.fromkeys(jobs))
     gpu = env.get('gpu') or ('CPU' if env else '—')
     if env.get('host') and env.get('gpu'):
         gpu += f" ({env['host'].split('.')[0]})"
     status = record.get('status')
     outcome = f'DRAFT: status {status}' if status else 'DRAFT'
+    if len(attempts) > 1:
+        outcome += f', {len(attempts)} attempts'
     files = []
     for path, label in artifacts.items():
         if path.startswith(f'runs/{run.name}/'):

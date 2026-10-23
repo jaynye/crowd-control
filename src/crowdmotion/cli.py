@@ -57,6 +57,12 @@ COMMANDS: dict[str, dict[str, tuple[str, str, tuple[str, ...]]]] = {
     "viser": ("crowdmotion.sim.mjlab.demo", "serve the mjlab plaza in a Viser browser viewer", ("viser",)),
     "corridor": ("crowdmotion.sim.mjlab.corridor.demo", "primitive-human corridor with LiDAR", ()),
   },
+  "wandb": {
+    "sync": ("crowdmotion.tracking.sync", "catch training lineages' W&B runs up from TensorBoard and the outbox",
+             ("sync",)),
+    "status": ("crowdmotion.tracking.sync", "W&B state of training lineages: published, newest checkpoint, outbox",
+               ("status",)),
+  },
 }
 
 
