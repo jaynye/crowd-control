@@ -29,3 +29,11 @@ hf_repo = "nvidia/soma-x"
 revision = "v0.3.2"
 hf_commit = "c8ed7284fec1edf59c75f5fe527ea03aab7e574b"
 path = "third_party/soma-x"
+
+# NVIDIA SONIC for the planning arms (backends.sonic); not installed in the uv workspace.
+[gear-sonic]
+url = "https://github.com/NVlabs/GR00T-WholeBodyControl.git"
+commit = "45c03facbf848e0c743091b7d9c17952096ff908"
+path = "third_party/GR00T-WholeBodyControl"
+hf_repo = "nvidia/GEAR-SONIC"
+hf_commit = "6733128a3d8a523b1418b06bca3cdf61c8b0987f"
