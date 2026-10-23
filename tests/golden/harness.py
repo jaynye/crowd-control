@@ -628,7 +628,9 @@ def case_mjlab_plaza(A, ctx, rec: Record) -> None:
   """mjlab plaza with the GraphCrowd term on CPU: mocap poses, LiDAR and term state."""
   from mjlab.envs import ManagerBasedRlEnv
 
-  cfg = A.plaza_env_cfg(str(ctx.graph), humans=6, num_envs=2, seed=3, width=64, height=48)
+  # Capsule humans: this golden predates rigid mesh humans (the plaza default since 2026-10-06).
+  cfg = A.plaza_env_cfg(str(ctx.graph), humans=6, num_envs=2, seed=3, width=64, height=48,
+                        human_geometry="capsules")
   env = ManagerBasedRlEnv(cfg, device="cpu")
   try:
     rec.js("model_sha256", model_digest(env.sim.mj_model))
