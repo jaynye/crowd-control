@@ -29,6 +29,7 @@ instead.
 
 | Entry | Task |
 |---|---|
+| [2026-10-12-recentering-training](2026-10-12-recentering-training.md) | Astra round 4 on decisive encounters (main checkout) while the robot traversal env and training (a) are built in a snapshot checkout; merge pending |
 | [2026-10-01-repo-migration](2026-10-01-repo-migration.md) | Move the repo to git and a local Linux GPU machine; functional reorganization, docs and memory restructure. Plan published, awaiting approval |
 
 Retired: [memory system and online-generation benchmark](../archive/2026-09-30-memory-and-benchmark.md)

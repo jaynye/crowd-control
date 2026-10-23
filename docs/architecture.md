@@ -35,7 +35,7 @@ lower ones (`tests/unit/test_layering.py` parses every import and checks this).
 | L3 | `iterate/` | Behavior evaluation (`evaluate`), paired comparison (`compare`), iteration sessions and their local and Slurm executors |
 | L3 | `library/` | Offline library generation (`generate`; random or turning commands), turn checks of turning libraries (`turns`) |
 | L3 | `bench/` | Throughput, continuation quality, graph speed, simulator speed, summary tables |
-| L3 | `sim/mjlab/` | The mjlab integration: the `GraphCrowd` command term (`command`), queued live controls (`tuning`), the plaza environment (`plaza`), demos (`demo`), the corridor fixture (`corridor/`) |
+| L3 | `sim/mjlab/` | The mjlab integration: the `GraphCrowd` command term (`command`), queued live controls (`tuning`), the plaza environment (`plaza`), the robot training environment (`traversal`) and its training command (`train`), demos (`demo`), the corridor fixture (`corridor/`) |
 | L3 | `viz/` | Replay videos (`replay`), the graph audit report (`report`), sampled posture/height sheets (`edge_review`), stick-figure clips (`stick`), HTML templates |
 | L2 | `behavior/` | The crowd loop: `controller`, motion `sources`, command sources (`commands`, `plaza` = `intent` + `steering`, `encounter`; `designs` builds either), `planner`, velocity estimators (`kinematics`) |
 | L1 | `graph/` | The motion graph: `config`, `tables` (`MotionGraph`, `graph.pt`), `build` (kNN, multi-library loading), `costs`, `runtime`, `audit`, turning coverage `turns`, derived `annotations`, independent `posture` state, saved joint `rotations` (`rotations.pt`, for rigid mesh humans) |
@@ -207,6 +207,22 @@ per-piece queries in bone frames. `GraphCrowd` registers it with mjlab's
 `RayCastSensor.add_ray_target` (a general hook in our mjlab) and recaptures the sense
 graph. The target merges by nearer hit, so `min_distance`, `max_distance` and geom ids
 keep their meaning.
+
+`sim.mjlab.traversal` is the robot training environment. It is mjlab's flat G1 velocity
+task with several additions:
+
+- The encounter plaza's walls and a `GraphCrowd` of rigid humans.
+- `CrowdGoalCommand`, which keeps the velocity task's `twist` interface but recomputes
+  the command every step toward a random goal in the plaza. It also places the robot,
+  after the crowd resets, at the start farthest from the humans.
+- A LiDAR on a provisional head site (`torso_link`). Its geom groups are only the
+  floor, the walls and the humans' ray-target group, so the robot never sees itself.
+- Robot–human clearance between robot spheres and human joint spheres, which drives
+  the proximity and contact costs and the collision termination.
+- Privileged nearest-human states for the critic.
+
+The env has three observation groups: `actor` (the deployable LiDAR input), `teacher` (privileged nearest-human states and plaza pose instead of the LiDAR) and `critic` (both). Three tasks share it: PPO on `actor`, PPO on `teacher`, and a student that distills a teacher checkpoint into `actor` with RSL-RL's `Distillation`. The humans do not perceive the robot. `crowd train traversal` (`sim.mjlab.train`)
+registers the task and runs mjlab's training inside a run directory.
 
 `sim.scene` builds the plaza for both mjlab and the replay renderer from one place. The
 two presets differ deliberately: the replay draws steering obstacles as cylinders,

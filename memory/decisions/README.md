@@ -24,6 +24,7 @@ what would decide it; and links.
 
 | Decision | Whose call | Blocking? |
 |---|---|---|
+| [Robot policy architecture](robot-policy-architecture.md): (a) from scratch, (b) SONIC residual, (c) LiDAR planner replacing SONIC's kinematic planner, (d) velocity-conditioned SONIC; recommended order (a) now, SONIC-in-mjlab gate, (c), (b) ablation, (d) | user | what to build after the (a) baseline |
 | [Learning paradigm](learning-paradigm.md): RL in mjlab vs TANGO-style offline expert data plus imitation; sets whether a stitching runtime is needed for training or only for evaluation | user | the runtime's role; the robot-side expert (TANGO branch) |
 | [Library generator](library-generator.md): keep ARDY Core, add Kimodo/SOMA, or mix priors behind the chosen graph | empirical, then user | no; current graph uses ARDY |
 | [Graph response delay](graph-response-delay.md): acceptable simulated-time reaction delay after turning/steering changes | user, informed by measurements | no baseline review |

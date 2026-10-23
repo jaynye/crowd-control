@@ -83,6 +83,12 @@ Guide: [behavior iteration](usage/behavior-iteration.md#iteration-sessions).
 
 Guide: [benchmarks](usage/benchmarks.md).
 
+## train
+
+| Command | Does | Key options | Needs |
+|---|---|---|---|
+| `crowd train traversal [name]` | Train the crowd traversal policy: a G1 walking to goals through graph-driven rigid-mesh humans, seen by a head LiDAR (`sim.mjlab.traversal`). PPO on LiDAR by default, `--teacher` for PPO on privileged observations (nearest humans, plaza pose), `--distill <teacher run>` to distill that teacher into the LiDAR policy (RSL-RL `Distillation`). Writes `runs/<UTC>_<name>/logs/<experiment>/<time>/` (checkpoints, TensorBoard) | `--graph`, `--rotations`, `--behavior` (encounter config, default `encounter_turns.json`), `--humans` (8; a teacher and its student must match), `--teacher`, `--distill <run>`, `--resume <earlier run>` (newest checkpoint, into a fresh run), `--out`; after `--`, mjlab `TrainConfig` options such as `--env.scene.num-envs 4096 --agent.max-iterations 4000` | GPU |
+
 ## demo
 
 | Command | Does | Key options | Needs |

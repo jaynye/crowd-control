@@ -34,6 +34,7 @@ its arguments in its header comment.
 | `bench_quality.sbatch` | `crowd bench quality` | `configs/bench/<cfg>.json runs/<UTC>_<name> [--group ...]` |
 | `sim_speed.sbatch` | `crowd bench sim-speed` | `runs/<UTC>_sim_speed` |
 | `bench_body_geometry.sbatch` | `crowd bench body-geometry` | `configs/bench/<cfg>.json runs/<UTC>_body_geometry [--only ...]` |
+| `train_traversal.sbatch` | `crowd train traversal` on one A40, four hours | `[name] [--humans 8] [--behavior <cfg>] [--teacher \| --distill runs/<teacher run>] [--resume runs/<UTC>_<name>] [-- <mjlab TrainConfig options>]`; export `CROWD_GRAPH` and `CROWD_GRAPH_ROTATIONS`; chain jobs with `--dependency=afterany:<job>` and `--resume` |
 | `mjlab_graph_demo.sbatch` | `crowd demo video` (EGL) | `<graph.pt> runs/<UTC>_mjlab_graph_demo [demo args]` |
 | `viser_graph_demo.sbatch` | `crowd demo viser` on a GPU node | `<graph.pt> [demo args]`; partition `rl2-lab` |
 | `viser_graph_demo_cpu.sbatch` | `crowd demo viser --device cpu` on 4 CPU cores, no GPU | `<graph.pt> [demo args]`; partition `rl2-lab` |
