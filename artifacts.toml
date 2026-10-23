@@ -9,11 +9,39 @@ sha256 = "acbc5df3f295b6def18de17ebbd08b9bff703cea79baa68fcf3a6c1589809828"
 bytes = 440898907
 default = true
 
+[artifact.graph-rotations]
+description = "Joint rotations for every graph-default frame (crowd graph rotations); rigid mesh humans need it"
+path = "runs/20261006T162450Z_graph_rotations/rotations.pt"
+sha256 = "1de81750d8798608820f34f0cbde34c9de4cd11ca7401ce8a66dd0841dadec4b"
+bytes = 318508211
+default = true
+
 [artifact.library-ardy-h40]
 description = "Offline ARDY H40 library: 2,048 streams x 32 s (18.2 h); needed only to rebuild the graph"
 path = "runs/20261001T004918Z_ardy_library/library.pt"
 sha256 = "8c3b57d49e591f90ff31e326c8418b5a626041fbde6fdea0b1743f24bd13bed3"
 bytes = 1955614917
+default = false
+
+[artifact.library-ardy-turns]
+description = "Supplementary ARDY H40 turning library (configs/library/ardy_turns_a40.json): 1,024 streams x 32 s (9.1 h) of in-place turns, arcs, walking and standing with heading targets"
+path = "runs/20261007T021516Z_ardy_turns_library/library.pt"
+sha256 = "8292e6b8baa14bfe7a820e3265aec34f7c09c4b3dbffce6f037ca2df30aac21c"
+bytes = 983053814
+default = false
+
+[artifact.graph-turns]
+description = "Opt-in merged motion graph (configs/graph/default.json) over library-ardy-h40 then library-ardy-turns; use with CROWD_GRAPH"
+path = "runs/20261007T021516Z_motion_graph_turns/graph.pt"
+sha256 = "ff52a5d8403a3d0a0598b1faa935fc8f9f7536a58167676baafe08bb27c97301"
+bytes = 661346587
+default = false
+
+[artifact.graph-turns-rotations]
+description = "Joint rotations for every graph-turns frame (crowd graph rotations over both libraries); use with CROWD_GRAPH_ROTATIONS"
+path = "runs/20261007T021516Z_graph_turns_rotations/rotations.pt"
+sha256 = "4ebf99d10d6feb5f92a77ec7cb4414772413a25c6f30115261da3b7f55f89ac4"
+bytes = 477760691
 default = false
 
 [artifact.pre-migration-snapshot]

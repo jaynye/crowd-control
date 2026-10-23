@@ -1,0 +1,171 @@
+{
+  "name": "body_geometry_matrix_a40",
+  "description": "Follow-up to body_geometry_a40: fills the humans x geometry matrix (m = 4, 8, 16) for rigid pieces with 32 shapes and skinned surfaces with SAH trees, repeats three record cases as anchors, and adds skinned 2,500-face fidelity.",
+  "library": "library-ardy-h40",
+  "envs": 4096,
+  "warmup": 10,
+  "steps": 50,
+  "seed": 0,
+  "bank": {
+    "sequences": 512,
+    "frames": 64
+  },
+  "lidar": {
+    "azimuth": 360,
+    "elevation": 16
+  },
+  "reference": {
+    "label": "G1 flat velocity task step, 4,096 envs, A40 (crowd bench sim-speed, 2026-09-30)",
+    "step_ms": 37.09
+  },
+  "cases": [
+    {
+      "name": "capsules_m16",
+      "geometry": "capsules",
+      "humans": 16
+    },
+    {
+      "name": "pieces18152_m16_v32",
+      "geometry": "pieces",
+      "humans": 16,
+      "faces": 18152,
+      "variants": 32,
+      "constructor": "cubql"
+    },
+    {
+      "name": "skinned1200_m16_sah",
+      "geometry": "skinned",
+      "humans": 16,
+      "faces": 1200,
+      "variants": 1,
+      "constructor": "sah"
+    },
+    {
+      "name": "skinned600_m16_sah",
+      "geometry": "skinned",
+      "humans": 16,
+      "faces": 600,
+      "variants": 1,
+      "constructor": "sah"
+    },
+    {
+      "name": "skinned1200_m16_v32_sah",
+      "geometry": "skinned",
+      "humans": 16,
+      "faces": 1200,
+      "variants": 32,
+      "constructor": "sah"
+    },
+    {
+      "name": "skinned2500_m16_sah",
+      "geometry": "skinned",
+      "humans": 16,
+      "faces": 2500,
+      "variants": 1,
+      "constructor": "sah"
+    },
+    {
+      "name": "capsules_m8",
+      "geometry": "capsules",
+      "humans": 8
+    },
+    {
+      "name": "pieces1200_m8_v32",
+      "geometry": "pieces",
+      "humans": 8,
+      "faces": 1200,
+      "variants": 32,
+      "constructor": "cubql"
+    },
+    {
+      "name": "pieces18152_m8_v32",
+      "geometry": "pieces",
+      "humans": 8,
+      "faces": 18152,
+      "variants": 32,
+      "constructor": "cubql"
+    },
+    {
+      "name": "skinned1200_m8_sah",
+      "geometry": "skinned",
+      "humans": 8,
+      "faces": 1200,
+      "variants": 1,
+      "constructor": "sah"
+    },
+    {
+      "name": "skinned4500_m8_sah",
+      "geometry": "skinned",
+      "humans": 8,
+      "faces": 4500,
+      "variants": 1,
+      "constructor": "sah"
+    },
+    {
+      "name": "pieces1200_m4_v32",
+      "geometry": "pieces",
+      "humans": 4,
+      "faces": 1200,
+      "variants": 32,
+      "constructor": "cubql"
+    },
+    {
+      "name": "pieces18152_m4_v32",
+      "geometry": "pieces",
+      "humans": 4,
+      "faces": 18152,
+      "variants": 32,
+      "constructor": "cubql"
+    },
+    {
+      "name": "skinned600_m4_sah",
+      "geometry": "skinned",
+      "humans": 4,
+      "faces": 600,
+      "variants": 1,
+      "constructor": "sah"
+    },
+    {
+      "name": "skinned1200_m4_sah",
+      "geometry": "skinned",
+      "humans": 4,
+      "faces": 1200,
+      "variants": 1,
+      "constructor": "sah"
+    },
+    {
+      "name": "skinned4500_m4_sah",
+      "geometry": "skinned",
+      "humans": 4,
+      "faces": 4500,
+      "variants": 1,
+      "constructor": "sah"
+    },
+    {
+      "name": "skinned4500_m4_v32_sah",
+      "geometry": "skinned",
+      "humans": 4,
+      "faces": 4500,
+      "variants": 32,
+      "constructor": "sah"
+    }
+  ],
+  "fidelity": {
+    "envs": 128,
+    "humans": 16,
+    "steps": 8,
+    "reference_faces": 18152,
+    "cases": [
+      {
+        "name": "rigid18152",
+        "geometry": "rigid",
+        "faces": 18152
+      },
+      {
+        "name": "skinned2500",
+        "geometry": "skinned",
+        "faces": 2500
+      }
+    ]
+  }
+}

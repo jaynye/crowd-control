@@ -27,6 +27,11 @@ ROOT = _find_root()
 RUNS = ROOT / "runs"
 
 
+def checkpoints_dir() -> Path:
+  """Model weights: `$CROWD_CHECKPOINTS`, else `<root>/checkpoints` (as `scripts/env.sh`)."""
+  return Path(os.environ.get("CROWD_CHECKPOINTS") or ROOT / "checkpoints")
+
+
 def artifact_path(name: str) -> Path:
   """Local path of artifact `name` from `artifacts.toml` (may not exist yet)."""
   path = ROOT / "artifacts.toml"
@@ -43,3 +48,10 @@ def default_graph() -> Path:
   """The saved motion graph: `$CROWD_GRAPH`, else artifact `graph-default`."""
   env = os.environ.get("CROWD_GRAPH")
   return Path(env) if env else artifact_path("graph-default")
+
+
+def default_graph_rotations() -> Path:
+  """Joint rotations for the default graph: `$CROWD_GRAPH_ROTATIONS`, else artifact
+  `graph-rotations` (`crowd graph rotations`)."""
+  env = os.environ.get("CROWD_GRAPH_ROTATIONS")
+  return Path(env) if env else artifact_path("graph-rotations")

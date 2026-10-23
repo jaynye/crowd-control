@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from crowdmotion.bench import body_geometry
 from crowdmotion.bench.quality import QUALITY_CASE_KEYS
 from crowdmotion.bench.throughput import THROUGHPUT_CASE_KEYS
 from crowdmotion.core.config import check_keys
@@ -31,6 +32,8 @@ def test_shipped_configs_load(path):
     assert set(cfg) <= set(GraphConfig.__dataclass_fields__)
   elif kind == "library":
     check_keys(cfg, CONFIG_KEYS, "library config")
+  elif path.name.startswith("body_geometry"):
+    body_geometry.validate(cfg)
   else:
     keys = QUALITY_CASE_KEYS if "scenarios" in json.dumps(cfg) else THROUGHPUT_CASE_KEYS
     for case in _cases(cfg):

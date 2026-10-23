@@ -24,6 +24,7 @@ COMMANDS: dict[str, dict[str, tuple[str, str, tuple[str, ...]]]] = {
     "report": ("crowdmotion.viz.report", "audit a saved graph and write an HTML report", ()),
     "edge-review": ("crowdmotion.viz.edge_review", "audit posture and ground heights with saved-edge contact sheets", ()),
     "speed": ("crowdmotion.bench.graph_speed", "time graph stepping for a training population", ()),
+    "rotations": ("crowdmotion.graph.rotations", "save joint rotations for a graph's frames (rigid mesh humans)", ()),
     "turns": ("crowdmotion.graph.turns", "turning-radius coverage of a saved graph under a flat-ground mask", ()),
   },
   "behavior": {
@@ -46,6 +47,7 @@ COMMANDS: dict[str, dict[str, tuple[str, str, tuple[str, ...]]]] = {
     "tables": ("crowdmotion.bench.tables", "Markdown tables of throughput and quality runs", ()),
     "clips": ("crowdmotion.viz.stick", "stick-figure videos of quality clips", ()),
     "sim-speed": ("crowdmotion.bench.sim_speed", "simulator speed reference points (mjlab)", ()),
+    "body-geometry": ("crowdmotion.bench.body_geometry", "LiDAR cost and fidelity of human body geometries", ()),
   },
   "demo": {
     "video": ("crowdmotion.sim.mjlab.demo", "render the mjlab plaza with LiDAR to MP4", ("video",)),
