@@ -36,6 +36,20 @@ Both used `encounter_turns.json`, with humans that do not perceive the robot. Do
 crowd that perceives the robot make the teacher learn avoidance? Is the goal command,
 which can ask for fast backward walking, a second cause?
 
+## Env checks before the first runs (jobs 4058442, 4058449 and 4058467, A40)
+
+Run from the 2026-10-12 training snapshot (git tag `snapshot/2026-10-12-train`) before
+a0 and t0, without run directories; their Slurm logs are in `logs/slurm/`.
+- **The env builds and the LiDAR sees the humans** (4058449, 64 envs): actor 387 and
+  critic 419 inputs. A mean of 32 rays per env return within 0.3 m of a human joint,
+  and every env has some. Robot and humans stay inside the plaza.
+- **Speed** (4058442, crushinator): 4,096 envs × 8 humans at 76.4 ms per env step
+  (53.6k env steps/s), peak 5.3 GB.
+- **The contact path works** (4058467, baymax, `logs/contact_check.py`): with robots
+  placed on human hips in 8 of 16 envs (clearance −0.21 to −0.26 m), `crowd_contact`
+  and `crowd_proximity` read 1, and `crowd_collision` terminates exactly the 8 placed
+  envs.
+
 ## Baseline evidence (diagnostic jobs 4058804 and 4058826, A40)
 
 `scripts/smoke/policy_check.py` plays a checkpoint with 512 envs

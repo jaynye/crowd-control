@@ -27,12 +27,9 @@ instead.
 
 ## Active entries
 
-| Entry | Task |
-|---|---|
-| [2026-10-12-recentering-training](2026-10-12-recentering-training.md) | Astra round 4 on decisive encounters (main checkout) while the robot traversal env and training (a) are built in a snapshot checkout; merge pending |
-| [2026-10-01-repo-migration](2026-10-01-repo-migration.md) | Move the repo to git and a local Linux GPU machine; functional reorganization, docs and memory restructure. Plan published, awaiting approval |
+None.
 
 Retired: [memory system and online-generation benchmark](../archive/2026-09-30-memory-and-benchmark.md)
 (2026-09-30); [graph behavior report](../archive/2026-10-01-graph-behavior-report.md)
-(2026-10-01); [rigid mesh humans](../archive/2026-10-06-rigid-body-geometry.md) (2026-10-06); [encounter design](../archive/2026-10-06-encounter-design.md) (2026-10-06); [encounter turning-graph comparison](../archive/2026-10-07-encounter-turns-comparison.md) (2026-10-07); [W&B run continuity](../archive/2026-10-18-wandb-continuity.md) (2026-10-18); [W&B fixes and canary](../archive/2026-10-18-wandb-canary.md) (2026-10-19); [traversal evaluation harness](../archive/2026-10-18-traversal-eval-harness.md) (2026-10-18). The bounded iteration session's own journal is archived as
+(2026-10-01); [rigid mesh humans](../archive/2026-10-06-rigid-body-geometry.md) (2026-10-06); [encounter design](../archive/2026-10-06-encounter-design.md) (2026-10-06); [encounter turning-graph comparison](../archive/2026-10-07-encounter-turns-comparison.md) (2026-10-07); [W&B run continuity](../archive/2026-10-18-wandb-continuity.md) (2026-10-18); [W&B fixes and canary](../archive/2026-10-18-wandb-canary.md) (2026-10-19); [traversal evaluation harness](../archive/2026-10-18-traversal-eval-harness.md) (2026-10-18); [repo migration](../archive/2026-10-01-repo-migration.md) (2026-10-23); [recentering toward robot training](../archive/2026-10-12-recentering-training.md) (2026-10-23). The bounded iteration session's own journal is archived as
 [behavior session journal](../archive/2026-10-01-behavior-session-journal.md).

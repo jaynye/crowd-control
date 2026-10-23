@@ -22,6 +22,9 @@
   directories land in main's `runs/`. It uses main's venv with
   `PYTHONPATH=<snapshot>/src:<snapshot>/mjlab/src` and `CROWD_ROOT=<snapshot>`.
   A pristine copy for diffing is at `/coc/flash7/jni66/.crowd-control-train-base`.
+  **Historical (2026-10-23):** both directories were removed. The snapshot's source is
+  git tag `snapshot/2026-10-12-train` (its parent commit is the base copy), and its
+  Slurm logs and check scripts moved to main's `logs/`.
 
 ## Done
 

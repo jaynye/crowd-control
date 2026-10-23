@@ -602,7 +602,8 @@ about 3.3 s per PPO iteration on an A40. These observations include a different
 graph/controller, robot, sensing, and learning workload from the original graph
 microbenchmark. They establish the implemented eight-human training configuration,
 not an integrated 16-human comparison against online ARDY. The smoke check predates
-the robot-aware crowd; [current status](status.md) retains this integration result.
+the robot-aware crowd; the [robot-aware teachers](../experiments/2026-10-12-robot-aware-teachers.md)
+experiment records this integration result.
 
 ### Reproducibility anchors
 

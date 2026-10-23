@@ -225,7 +225,7 @@ the LiDAR policy (ledger D18; [learning paradigm](../archive/2026-10-12-decision
   on CPU. One deliberate difference: a `history` of 0 is rejected (it used to pass the whole
   history by accident; no config used it). Design rationale:
   [runtime architecture](design/runtime-architecture.md). Plan, phase log and reviews:
-  the repo-migration entry in the [journal](../journal/README.md).
+  the archived [repo-migration journal](../archive/2026-10-01-repo-migration.md).
 - mjlab is first-party (ledger D13); its upstream history is outside the repo (plain
   tracked files, the plan's default; a fork or subtree can still be adopted).
 - Next (Phase 11, user to agree): switch plaza steering to per-human streams and make
@@ -467,6 +467,6 @@ the LiDAR policy (ledger D18; [learning paradigm](../archive/2026-10-12-decision
   disk). It is unrelated and was left untouched.
 - **Old broken env:** `mjlab/.venv.stale-pre-migration` (2026-09-28, gitignored) awaits
   the user's deletion.
-- **GPU paths unverified after the refactor** until Phase 10 on the local GPU: bf16
-  autocast, ARDY `conditions="library"`, Kimodo post-processing and the throughput OOM
-  retry are not covered by the CPU goldens.
+- **GPU paths unverified after the refactor** until checked on a local GPU (the
+  migration's Phase 10): bf16 autocast, ARDY `conditions="library"`, Kimodo
+  post-processing and the throughput OOM retry are not covered by the CPU goldens.
