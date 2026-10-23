@@ -23,6 +23,7 @@ stay the immutable record of each run, indexed in the [run log](../log/runs.md).
 | [Status](status.md) | Active work, what exists, known issues, next steps |
 | [Plan](plan.md) | The user's staged plan (2026-09-30 handoff) with progress and promotion evidence per stage |
 | [Handoff](handoff-2026-09-30.md) | The user's plan of record, 2026-09-30 (moved here from the repository root); not edited |
+| [Paper formalism](paper-formalism.md) | Three-page manuscript core, implemented motion-graph and teacher/student mathematics, figure specifications, and results provenance (2026-10-14) |
 
 ## Design
 

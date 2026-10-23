@@ -3,7 +3,7 @@
 Li, Chen, Li, Cao, Ren, Tomizuka, Shah. "TANGO: Humanoid Navigation in Cluttered
 Environments with a Whole-Body Vision-Language-Action Model", arXiv:2609.09158.
 Raised by the user on 2026-09-30 as an alternative to RL
-([learning paradigm](../decisions/learning-paradigm.md)).
+([learning paradigm](../archive/2026-10-12-decision-learning-paradigm.md)).
 
 **Source caveat:** the facts below came from a summarizing web fetch of the arXiv
 abstract and HTML pages on 2026-09-30, not a full reading. Check the paper before
@@ -43,5 +43,5 @@ relying on a specific number.
   known exactly to a privileged expert.
 - The **human** side is absent from TANGO. Its pipeline implies the crowd is generated
   offline per episode, which suits ARDY or Kimodo directly, without a graph runtime.
-- See the [learning paradigm](../decisions/learning-paradigm.md) decision for what each
+- See the [learning paradigm](../archive/2026-10-12-decision-learning-paradigm.md) decision for what each
   branch needs.

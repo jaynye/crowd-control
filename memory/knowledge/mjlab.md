@@ -28,6 +28,10 @@ Simulator features, general enough to offer upstream. They are listed in
   must never become a policy observation.
 - **`RayCastSensorCfg.VizCfg.stride`**: draw every Nth ray without subsampling the data.
   The crowd demos use it to keep Viser responsive.
+- **`RayCastSensor.add_ray_target`** (2026-10-06): geometry outside the MuJoCo model,
+  cast by a Warp callback inside the sense graph right after the MuJoCo raycast;
+  the nearer hit wins per ray. Rigid mesh humans use it (`crowdmotion.sim.rays`). Test:
+  `test_raycast_ray_targets_keep_nearer_hit` in `mjlab/tests/test_raycast_sensor.py`.
 
 Tests: `mjlab/tests/test_lidar_pattern.py` (ray angles, invalid patterns). The scene
 tests that exercise the sensor against moving geometry (occlusion, minimum range,
@@ -80,3 +84,10 @@ plane proposal: [archived note](../archive/2026-09-26-mjlab-slurm-viser-and-agen
   the member and uninstalls the root's other dependencies (`AGENTS.md`).
 - Commands run after the env's `forward()`, so sensors and viewers see poses written by a
   command term one step late.
+- viser 1.0.27: `gui.reset()` fails when the GUI holds a tab group (it marks the group
+  removed before its tabs). Remove tabs innermost first, then reset
+  (`live_viewer._remove_tabs`, unit-tested). That workaround and the trimming of viser's
+  client-connect callbacks between rebuilt viewers use viser private attributes; recheck
+  both on a viser upgrade (the second would leak silently).
+- A raw websocket client of a viser server must offer the `viser-v<version>` subprotocol
+  or the server refuses it (2026-10-22, headless viewer checks).

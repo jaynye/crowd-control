@@ -22,7 +22,7 @@ Is the traversal policy trained:
 | Body-motion runtime | Required: pure-torch stitching at simulator rate | Not needed for data. Direct per-episode ARDY rollouts are cheap (below) |
 | Closed-loop evaluation | Same runtime as training | Still needs reactive humans: an evaluation policy deviates from the expert, and baked humans would ignore it. Small-scale online ARDY or the graph runtime; DAgger-style data collection needs the same |
 | Robot-side expert | None; the reward defines behavior | A planner that accounts for time and the humans' future motion. TANGO's expert is A* in static scenes plus IK editing plus SONIC tracking. **Outside the handoff; not started** |
-| LiDAR geometry | At 4,096 × 16 = 65,536 humans, the 9,084-vertex Core skin would be about 600M vertices per step, which pushes toward capsule proxies ([human body model](human-body-model.md)) | Offline rendering can afford full meshes |
+| LiDAR geometry | At 4,096 × 16 = 65,536 humans, the 9,084-vertex Core skin would be about 600M vertices per step, which pushes toward capsule proxies ([human body model](../decisions/human-body-model.md)) | Offline rendering can afford full meshes |
 | Body-model choice | ARDY Core (cheap library) unless SOMA is required | Kimodo/SOMA becomes affordable (below) |
 
 **Baked-crowd cost at TANGO's scale** (agent estimate, 2026-09-30): 64,633 episodes

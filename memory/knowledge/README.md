@@ -9,14 +9,15 @@ models, their APIs and traps, and papers. Project design, results and status liv
 | [ARDY](ardy.md) | Released checkpoints, `autoregressive_step` semantics (history returned, FSQ re-encoding), window budget, guidance passes, Core skin |
 | [Kimodo and SOMA-X](kimodo.md) | Batching vs multi-prompt semantics, continuation via transition constraints, cached text features, SOMA skeletons and meshes |
 | [mjlab (our copy)](mjlab.md) | First-party simulator (ledger D13): our LiDAR sensor changes, the inherited corridor fixture, Viser over Slurm, traps |
+| [GEAR SONIC](sonic.md) | Released tracker (PyTorch and ONNX, 50 Hz tokens) and kinematic planner (ONNX only, batch 1, 30 Hz G1 qpos, velocity/facing/waypoint inputs); training in Isaac Lab; MuJoCo sim2sim |
 | [TANGO](tango.md) | arXiv:2609.09158: offline plan-edit-track expert data and a whole-body VLA trained by imitation; static clutter, RGB, G1 (from a summarizing fetch) |
 
 ## Related work not yet reviewed
 
 - MotionBricks (NVIDIA): real-time motion in-betweening. Kept out of the initial
   comparison by the user (ledger D03).
-- GEAR SONIC (NVIDIA): a humanoid behavior foundation model; ARDY can plan for it.
-  TANGO uses it as gait source and tracker.
+- GEAR SONIC beyond the [release note](sonic.md): the paper's training details. ARDY can plan
+  for it; TANGO uses it as gait source and tracker.
 - Bones Rigplay 1 / SEED: the training data for ARDY and Kimodo; the SEED G1 CSVs drive
   ARDY's constraint demo.
 

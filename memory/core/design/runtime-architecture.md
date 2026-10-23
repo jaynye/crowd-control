@@ -77,6 +77,56 @@ paired comparison, not a golden match:
 The behavior work queued after them (committed turns biased toward 90°, a facing cost)
 is in [crowd architecture](crowd-architecture.md#behavior-review).
 
+## Training lineages and W&B
+
+Ledger D20 (user, 2026-10-18); code in `crowdmotion.tracking` and `sim.mjlab.wandb_log`,
+usage in [CLI](../../../docs/cli.md#train) and [Slurm](../../../docs/slurm.md).
+
+- **Local files are the record; W&B mirrors them.** A lineage is one run directory that
+  its attempts resume in place, and one W&B run whose id is the directory's name.
+- **Rows go out only through the last saved checkpoint.** mjlab does not checkpoint env
+  state, so a resumed attempt reruns the iterations after its checkpoint with different
+  rollouts. Publishing live and skipping replayed steps (hrc) is sound only for
+  bit-deterministic training. The cost is a lag of one save interval (100 iterations,
+  about 5.5 min at 4,096 envs).
+- **The writer runs inside the trainer** (RSL-RL's dict logger), not as a mirror process:
+  hrc's mirror was unsignalled and killed at requeue, which is where its failures came
+  from. The flush sits in the runners' `save`, because mjlab calls the writer's
+  `save_model` only with `upload_model`.
+- **Catch-up from TensorBoard** takes each iteration from the attempt whose trajectory
+  continued: an attempt contributes rows only up to its own last checkpoint, cut where a
+  later attempt starts, so one that died before its first save contributes nothing
+  (review finding 3). The floor is `published_through`, never W&B's summary, which an
+  evaluation row overwrites. There is no W&B offline mode: wandb 0.30 ignores `resume`
+  offline.
+- **Published means confirmed** (ledger D20). `log()` only queues, so the floor and the
+  eval ledger advance only after `finish()` returns within the SDK's `finish_timeout`.
+  A session that ends otherwise stays `unconfirmed`; the next holder reads the run's
+  history back (`scan_history`, bounded) and replays only what W&B lacks. Rows above a
+  gap are kept in `published_above`; committed rows that neither TensorBoard nor W&B
+  holds are recorded in `lost`, and TensorBoard is flushed at every checkpoint so that
+  this stays rare. wandb 0.30's default `reinit` returns a still-active run, so every
+  session is finished before its lock is released and opened with
+  `reinit="finish_previous"` and an identity check.
+- **One writer per W&B run** is a flock on `<run>/wandb.lock`. On `/coc/flash7` (NFSv4.2,
+  `local_lock=none`) it is a server-side lock that every node sees: while a compute node
+  held it, an attempt from sky1 was refused (CPU job 4133247, 2026-10-18). A process
+  drops such a lock when it closes any descriptor of the file, so the holder never
+  reopens it.
+- **Requeue.** This cluster requeues preempted overcap jobs itself (`PreemptMode=REQUEUE`,
+  `GraceTime=300`), and a cancelled job must stay cancelled. So the job requeues itself
+  only after a TERM near its time limit, and only once the trainer has exited
+  `checkpointed`.
+- **Verified** by the GPU check `runs/20261018T153936Z_train_traversal_wandb_check` (job
+  4133159; requeue and in-place resume, W&B off) and by the W&B canary
+  `runs/20261019T012044Z_train_traversal_TEST_canary_debug` (job 4138449, scratch project
+  `crowd-control-traversal-debug`, user-approved 2026-10-19): TERM at iteration 24,
+  requeue, resume in place to 39, an evaluation attached at 39; W&B holds training
+  iterations 0–39 exactly once on the step metric `iteration`, one run id over three
+  sessions. Only the fake SDK has exercised a finish timeout, a kill mid-session
+  (reconciliation) and a partial media upload. `DEFAULT_MODE` is `online` since
+  2026-10-21 (user); lineages created before keep their recorded `disabled`.
+
 ## Invariants
 
 - **Per-human randomness is independent of batch order and composition** (`AGENTS.md`):

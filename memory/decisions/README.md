@@ -24,11 +24,15 @@ what would decide it; and links.
 
 | Decision | Whose call | Blocking? |
 |---|---|---|
-| [Learning paradigm](learning-paradigm.md): RL in mjlab vs TANGO-style offline expert data plus imitation; sets whether a stitching runtime is needed for training or only for evaluation | user | the runtime's role; the robot-side expert (TANGO branch) |
+| [Planner objective and crowd](planner-objective-and-crowd.md): persistent-goal reward, non-reactive graph humans and reward/credit/density ablations; implementation and dense experiment authorized, best objective still empirical | user, informed by experiment | which objective/crowd to promote after results |
+| [Robot policy architecture](robot-policy-architecture.md): (a) from scratch, (b) SONIC residual, (c) LiDAR planner replacing SONIC's kinematic planner, (d) velocity-conditioned SONIC; recommended order (a) now, SONIC-in-mjlab gate, (c), (b) ablation, (d). User strongly favors (c) with SONIC frozen (2026-10-18); the FP32 hand port batches at 239 plans/s on A40: 3.4–5.7× training time at 1–2 Hz replans, 25× at 10 Hz | user | what to build after the (a) baseline; the SONIC gate |
+| [Traversal evaluation](traversal-evaluation.md): command-following and collision metrics (trajectory deviation, time to first collision, rates per robot-minute, TTC, encounters), a paired `crowd eval traversal` (built), the non-avoidant baseline b0 and the fall fix (training since 2026-10-18) | user | which evaluations to run on the arms |
 | [Library generator](library-generator.md): keep ARDY Core, add Kimodo/SOMA, or mix priors behind the chosen graph | empirical, then user | no; current graph uses ARDY |
 | [Graph response delay](graph-response-delay.md): acceptable simulated-time reaction delay after turning/steering changes | user, informed by measurements | no baseline review |
+| [Encounter progress](encounter-progress.md): failed ordinary turns beside walls/obstacles after close-pair recovery | empirical, then user | candidate readiness; opt-in development continues |
+| [Posture and height calibration](posture-height-calibration.md): geometric style classes, targets and acceptable flat-ground heights | empirical review, then user | calibrated promotion; no opt-in development |
 | [Text encoder access](text-encoder-access.md): gated Llama-3 blocks prompts; guidance with prompts would cost ARDY 1.9–2.8× | user | style prompts; the no-guidance setting |
-| [Human body model](human-body-model.md): ARDY Core skeleton and skin vs SOMA; LiDAR mesh vs collision proxies, now at 16k–65k humans | empirical, then user | geometry integration (stage 6) |
+| [Human body model](human-body-model.md): LiDAR geometry settled (D15: full-resolution rigid Core-skin pieces); morphology set, contact geometry, ray budget and scan rate open | user | morphology variety, robot contact |
 
 Retired 2026-09-30: demand budget (ledger D09) and backend choice (ledger D10), archived
 as [demand budget](../archive/2026-09-30-decision-demand-budget.md) and
@@ -37,3 +41,6 @@ as [demand budget](../archive/2026-09-30-decision-demand-budget.md) and
 Retired 2026-10-01: offline runtime (ledger D11: motion graph selected). Proposal
 archived as [offline runtime](../archive/2026-10-01-decision-offline-runtime.md);
 remaining generator and reaction-delay questions are separate above.
+
+Retired 2026-10-18: W&B run continuity (ledger D20: in-place lineages, one writer per W&B run, writer off until a canary), archived as
+[W&B run continuity](../archive/2026-10-18-decision-wandb-run-continuity.md).

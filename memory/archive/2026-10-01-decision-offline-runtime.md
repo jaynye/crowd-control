@@ -6,7 +6,7 @@ Opened 2026-09-30. **Whose call:** the user, informed by a prototype. **Active:*
 user set 4,096 environments with m = 4–16 and moved both generators offline (ledger
 D09–D10). The runtime is required for RL in mjlab and for closed-loop evaluation; a
 TANGO-style branch can bake humans per episode instead
-([learning paradigm](../decisions/learning-paradigm.md)).
+([learning paradigm](2026-10-12-decision-learning-paradigm.md)).
 
 ## Question
 
@@ -110,5 +110,5 @@ are tight.
 - Whether the remaining costs matter downstream: foot sliding and root-speed seams for
   LiDAR returns or policy learning, and local rotations for mesh LiDAR. An mjlab smoke
   test with the graph would show this.
-- The [learning paradigm](../decisions/learning-paradigm.md): on a TANGO-style branch the runtime
+- The [learning paradigm](2026-10-12-decision-learning-paradigm.md): on a TANGO-style branch the runtime
   serves evaluation only.

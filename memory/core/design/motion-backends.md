@@ -106,6 +106,21 @@ As of 2026-09-30, on one A40 in isolation
 - **Historical:** Kimodo on an L40S gave 7–28 clip-seconds per wall-second
   ([Kimodo smoke](../../experiments/2026-09-28-kimodo-smoke.md)).
 
+## SONIC robot references (2026-10-18)
+
+**Conclusion (2026-10-18, revised 2026-10-19):** the fetched SONIC planner batches through
+a FP32 hand port (B4096, max qpos reference error 1.71e-5). The first port reached 239
+plans/s on an A40 ([experiment](../../experiments/2026-10-18-sonic-planner-batching.md)).
+Folding each MatMul whose right operand is 2-D into one mm (`backends/onnx_port.OnnxPort`,
+bit-equal outputs) raised it to 1,829 plans/s at batch 4,096. That is enough to run the
+planner online at 1–2 Hz replanning in training, at about 210–235 s per 4,096-env iteration
+([planning arms](../../experiments/2026-10-19-sonic-planning-arms.md)). 10 Hz (40,960 plans/s)
+stays out of reach. Boundary metadata surgery fails; GPU IO binding stays batch 1 at 73
+plans/s, and the tried precision variants change references. SONIC's frozen tracker passed
+its mjlab gate on 2026-10-19. None of this changes the human backend choice.
+*Historical (2026-10-18, before the fold):* reuse the prior through offline G1 references
+or a separately authorized compression or distillation task.
+
 ## Caveats
 
 - **Isolated capacity** is necessary, not sufficient. End-to-end runs must share the GPU

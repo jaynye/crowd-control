@@ -12,9 +12,10 @@ traversal policy at 4,096 parallel environments with m = 4–16 humans each (use
 **Route to body motion: offline** (ledger D10). The benchmark ruled out online
 generation at this scale. ARDY and Kimodo generate diverse motion offline (walking
 styles, turns, starts/stops, idles), stitched online through a stochastic motion graph
-(user, 2026-10-01; ledger D11). On a TANGO-style
-branch, humans can instead be baked per episode
-([learning paradigm](../decisions/learning-paradigm.md)).
+(user, 2026-10-01; ledger D11). The robot is trained by RL in mjlab, with a
+privileged teacher distilled into the LiDAR policy (user, 2026-10-12; ledger D18); the
+TANGO-style branch with humans baked per episode is not pursued
+([learning paradigm](../archive/2026-10-12-decision-learning-paradigm.md)).
 
 ## Stages
 
