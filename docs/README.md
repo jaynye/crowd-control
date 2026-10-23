@@ -20,10 +20,12 @@ separately and are not needed to run anything here.
 
 | Guide | Covers |
 |---|---|
+| [Goal navigation](usage/navigation-training.md) | Persistent-goal rewards, non-reactive graph walkers and matched reward/credit/crowd ablation arrays |
 | [Behavior iteration](usage/behavior-iteration.md) | Graph audit report, plaza evaluation, replay videos, paired comparison, iteration sessions |
 | [Library and graph](usage/library-and-graph.md) | Offline ARDY library generation, the motion graph, saved graphs, graph evaluation |
 | [Benchmarks](usage/benchmarks.md) | Online ARDY/Kimodo throughput and continuation quality: backends, procedures, metric definitions |
 | [Demos](usage/demos.md) | The mjlab plaza with graph-driven humans and LiDAR: video export and the Viser viewer, locally or through an SSH tunnel |
+| [Traversal evaluation](usage/traversal-evaluation.md) | `crowd eval traversal`: the protocol, paired goals, outputs and metric definitions (command following, collisions, time to contact, falls) |
 | [Corridor fixture](usage/corridor.md) | Primitive humans with physics and LiDAR in an enclosed corridor |
 
 ## Conventions

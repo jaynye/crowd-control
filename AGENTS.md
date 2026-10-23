@@ -38,7 +38,7 @@ the user asks.
 | `mjlab/` | **First-party** copy of mujocolab/mjlab (ledger D13), upstream base in `third_party.toml` |
 | `third_party.toml`, `third_party/` | Pinned kimodo, ardy, SOMA-X; clones are fetched by `scripts/bootstrap.sh`, not tracked |
 | `artifacts.toml` | Large run outputs (graph, library) with sha256; `scripts/fetch_artifacts.sh` copies them |
-| `runs/` | Outputs, one UTC-stamped directory per run; never overwritten; not tracked |
+| `runs/` | Outputs, one UTC-stamped directory per run; never overwritten (a training lineage resumes in its own directory); not tracked |
 | `checkpoints/` | Model weights (`CROWD_CHECKPOINTS`); not tracked |
 
 Binding constraints go here, research rationale and conclusions in `memory/core`,
@@ -58,8 +58,8 @@ cite docs and code.
   Put a new behavior rule in a command source, planner, motion source or graph cost term,
   never in one consumer, so evaluation and simulation cannot diverge.
 - **Layers.** Imports point down: L0 `core`; L1 `graph`, `backends`, `metrics`,
-  `sim.scene`, `sim.capsules`; L2 `behavior`; L3 `iterate`, `library`, `bench`,
-  `sim.mjlab`, `viz`; L4 `cli`. Only `sim.mjlab` imports mjlab at module level and only
+  `sim.scene`, `sim.capsules`, `sim.body`, `sim.rays`; L2 `behavior`; L3 `iterate`,
+  `library`, `bench`, `sim.mjlab`, `viz`, `tracking`; L4 `cli`. Only `sim.mjlab` imports mjlab at module level and only
   `backends` imports ARDY or Kimodo. `tests/unit/test_layering.py` enforces this.
 - **Goldens.** `tests/golden/expected/` pins today's outputs bit for bit (CPU, one
   thread). A refactor must keep them matching. Never re-capture them to make a change
@@ -68,11 +68,60 @@ cite docs and code.
 - **Randomness.** Per-human streams come from `core.rng`; seed formulas are named schemes
   in `human_seeds`. `PlazaBehavior` still shares one generator (kept for the baselines);
   switching it to per-human streams is a planned behavior change.
+- **Saved-graph annotations.** Derive posture and flat-ground measurements from the
+  saved tables; body-local Y is absolute ground height. New masks and style/turn costs
+  are opt-in and do not mutate baked validity or the saved graph format. Posture uses
+  the independent `graph_posture` stream; its initial distribution applies at reset.
+  An all-masked boundary explicitly holds its current pose and reports the fallback.
+- **Rigid mesh humans.** Full-resolution rigid Core-skin pieces are the plaza default
+  (ledger D15). Their bone rotations live beside the graph (`crowd graph rotations`,
+  artifact `graph-rotations`). A rebuilt graph needs rebuilt rotations: the load check
+  rejects a mismatch. Never fall back to capsules silently when rotations or the Core
+  skin are missing. The pieces are visual geoms (group 1) seen through a ray target:
+  no ray-cast sensor may trace their group (`GraphCrowd` raises), or mujoco_warp's
+  slow mesh path returns.
+- **Live crowd settings.** Each `GraphCrowd` owns its mutable runtime configuration;
+  cached graph tables may be shared. GUI callbacks enqueue edits for the simulation
+  thread to apply at edge boundaries or before reset, never during selection.
+  `crowd play traversal`'s live viewer builds envs only through `evaluate.eval_env_cfg`
+  and offers the navigation campaign's crowds only through `ablate_navigation`'s
+  condition functions, so viewer and evaluator cannot diverge; a crowd switch is a
+  queued all-or-none edit (`LiveCrowdTuning.submit_encounter`) or an env rebuild.
 - **Commands and outputs.** New tools are `crowd` commands (`src/crowdmotion/cli.py`)
   that write a fresh `runs/<UTC>_<name>/` through `core.rundir.RunDir` (status, config,
-  environment, git commit and diff). Configs reject unknown keys: typed dataclasses via
+  environment, git commit and diff). Exceptions: a training lineage (below) resumes in its
+  own directory, and `crowd wandb sync|status` write none (a sync is recorded in the
+  lineage's own `run.json`). Configs reject unknown keys: typed dataclasses via
   `core.config.from_dict`, flat library and benchmark cases via `check_keys`
   (`GraphConfig` stays lenient so old saved graphs load; making it strict is Phase 11).
+- **Goal navigation experiments (user, 2026-10-21).** The persistent-goal objective and
+  non-reactive graph humans are opt-in; preserve legacy reward/behavior defaults.
+  SONIC stays frozen. Potential shaping acts at planner decision boundaries with PPO's
+  discount and zero terminal potential for success, collision, fall and task deadline.
+  A task deadline is a failure termination, distinct from a rollout truncation.
+  `reactive: false` disables all human/robot neighbor responses, including stopping,
+  separation and graph clearance, through the shared crowd controller. Robot collision
+  detection remains active. Navigation campaigns freeze sources/configs across requeues.
+  Their fixed-grid evaluator may resume its partial run directory after preemption,
+  appending condition/checkpoint results while skipping completed outputs.
+- **Training lineages and W&B (user, 2026-10-18; ledger D20).** One `crowd train
+  traversal` lineage is one run directory: `--run <dir>` creates it or resumes it in
+  place from its newest checkpoint to `target_iterations`, each attempt in `run.json`'s
+  `attempts`; `--resume`, `--distill` and `--finetune` start a new lineage that records
+  its parent. A lineage is one W&B run whose id is its first run directory's name.
+  **One writer per W&B run:** the holder of `<run>/wandb.lock` (the trainer for its whole
+  attempt, else `attach_eval` or `crowd wandb sync`), and only it writes the `wandb`
+  block of `run.json`. Rows go out only through the last saved checkpoint, with the
+  step metric `iteration` and never `step=`; a resumed attempt drops rows at or below
+  `published_through`. No checkpoint uploads, no W&B offline mode, and verification runs
+  (at most `CHECK_ITERATIONS` iterations) stay off W&B. **The writer is on by default**
+  (user, 2026-10-21; `tracking.lineage.DEFAULT_MODE = "online"`, main project
+  `rl2-group/crowd-control-traversal`), after a labeled canary in the scratch project
+  `rl2-group/crowd-control-traversal-debug` (2026-10-19). A lineage keeps its recorded
+  mode, so runs created while the default was off stay off; label test runs with
+  `CROWD_WANDB_TAGS` or send them to the scratch project. Test against
+  `tests/fake_wandb.py`; never let a test reach W&B. On SIGTERM training checkpoints and exits 75; only
+  `train_traversal.sbatch` requeues (`docs/slurm.md`).
 - **mjlab is ours.** Keep simulator changes general (sensors, viewers) and record them
   in `mjlab/docs/source/changelog.rst`; crowd-specific code belongs in
   `crowdmotion.sim.mjlab`. Its upstream history is outside this repository; merging an
@@ -95,7 +144,9 @@ cite docs and code.
   result as a one- to three-line conclusion in the core note it affects, linking its
   experiment note; update this file for new invariants.
 - **Every new run directory** gets a row in [`memory/log/runs.md`](memory/log/runs.md):
-  `scripts/index_runs.py` drafts it from `run.json`; write the outcome by hand. Cite runs
+  `scripts/index_runs.py` drafts it from `run.json`; write the outcome by hand. A
+  training lineage stays one row however many attempts it has (they are in its
+  `run.json`); update the row's jobs and outcome as attempts land. Cite runs
   by ID in backticks (`runs/<UTC>_<name>/...`), never as Markdown links: `runs/` is not
   in git.
 - **Retire** a journal entry, resolved decision or unreferenced experiment note with
@@ -130,7 +181,8 @@ cite docs and code.
 - Package code does not need `env.sh`; ARDY and the checkpoints do.
 - Do not load the ARDY `soma` nickname: no SOMA checkpoint has been released.
 - **CPU runs:** set PyTorch to one thread (or a few) on shared hosts. The evaluator,
-  Viser demo and goldens do this by default.
+  Viser demo and goldens do this by default. On the cluster, CPU runs go to a compute
+  node, never the login node ([Slurm](#slurm)).
 - Never call `soma.setup_warp_for_ddp()` in an mjlab process: it disables PyTorch's CUDA
   caching allocator for the whole process.
 - **Text encoder:** both models use LLM2Vec on the gated
@@ -154,6 +206,46 @@ cite docs and code.
   Ordinary travel should be mostly forward, with turning motion for direction changes;
   lateral/backward motion is deliberate, including abrupt close avoidance. Measure
   travel relative to body facing rather than treating curved forward paths as sidesteps.
+- **Transitions, posture and live tuning (user, 2026-10-05):** ordinary direction
+  changes should mostly be a body turn (for example about 90°) followed by forward
+  walking; sidestepping is uncommon, and its rarity is a tunable stochastic parameter.
+  Each human has a posture style (upright or hunched) that persists stochastically: it
+  is drawn at spawn from a configurable initial distribution strongly biased toward
+  upright, then mostly kept. Stochasticity parameters should be adjustable live in the
+  Viser demo. On the flat ground plane, motion must not drastically change a human's
+  vertical position; terrain such as stairs comes later.
+- **Encounter design (user, 2026-10-06):** keep the original random-goal plaza design and
+  add an alternate `encounter` design (`behavior/designs.py`) that the iteration agent can
+  also work on. Its parts:
+  - waypoint or velocity conditioning, with random waypoints for comparison;
+  - a configurable collision bubble;
+  - a per-step switch probability set by each human's assertiveness and the distance of
+    the closest point in the bubble;
+  - committed interventions: sidestep, gradual and in-place turns, and yield;
+  - humans stop before they collide, with a starting tolerance of 1 cm.
+
+  Two humans may decide at once; do not add a tie-break. Turning motions of various
+  radii, including in-place turns, should exist; generate them offline where the library
+  lacks them. Encounter randomness uses the per-human `encounter` seed scheme.
+- **Encounter decisiveness (user, 2026-10-12):** prefer prompt, minimal-detour
+  resolution with a small tunable stubborn population. New mechanisms default off;
+  `stop_clearance_m` stays 0.01 m by default. A stubborn human obeys the stop rule;
+  finite stall patience retires its trait before it can initiate an intervention.
+  Assess individual stop tails as well as close-pair standoffs: the opt-in
+  `encounter_decisive.json` remains a development candidate, not a readiness claim.
+- **Robot perception (user, 2026-10-12):** humans perceive the robot and give way to it
+  with a stubbornness set separately from their stubbornness toward humans. External
+  agents enter the encounter design only through `set_external` (mjlab:
+  `GraphCrowdCfg.perceive_entity`); without them nothing changes, and
+  `robot_oblivious_fraction = 1` must reproduce the robot-blind crowd. The robot traits
+  draw on their own reset counter and never shift other draws. Astra's robot-stubbornness
+  round waits until the user has reviewed round 4.
+- **Robot training (user, 2026-10-12):** RL in mjlab for every policy architecture, a
+  privileged teacher first, then distillation into the LiDAR policy (ledger D18).
+- **Robot evaluation (user, 2026-10-21):** compare collision rate and goal completion
+  rate together under different fixed human behaviors, including easy and hard
+  conditions, for every model and baseline. Report each condition separately so an
+  aggregate cannot hide loss of easy-condition skill during curriculum training.
 - Benchmarks measure **usable** motion: count only newly generated frames (ARDY returns
   history + horizon), apply the consumed fraction `u`, exclude model loading, GUI and
   export from steady-state timing, and report startup separately. Label isolated
@@ -173,9 +265,30 @@ mjlab's upstream git directory at `/coc/flash7/jni66/mjlab-upstream.git`.
 
 Lab conventions (shared with `~/flash/hrc`, user direction 2026-09-28):
 
-- Prefer L40S, A40 or A5000. Never Titan X or 2080 Ti. Exclude `bishop`.
+- Prefer L40S, A40 or A5000. RTX 6000 and 2080 Ti are also authorized when the
+  actual workload fits device memory (user, 2026-10-21); verify without changing
+  matched training batch sizes. Never Titan X. Exclude `bishop`.
+- **No heavy computation on login nodes (user, 2026-10-18).** On `sky1`/`sky2` keep to
+  editing, git, linting, Slurm queries and the CPU unit suite. Evaluations, rollouts,
+  smoke runs and env builds (CPU or GPU), graph and library work, and GPU tests run on
+  compute nodes through Slurm. Give CPU work a CPU-only allocation (no `--gres`), which
+  should never block on GPU availability, for example
+  `sbatch --partition=rl2-lab,overcap --qos=short --cpus-per-task=8 --time=00:30:00
+  --output=logs/slurm/%x-%j.out --wrap='<cmd>'`. The `short` QOS accepts batch jobs
+  only; `srun` with it is refused.
 - Submit with `--partition=rl2-lab,overcap --qos=short`. `rl2-lab` is not preemptible
   and caps jobs at 4 h; `overcap` is preemptible.
+- **Confirm the GPU was allocated (2026-10-22).** Sixteen navigation-campaign array
+  elements and requeues started on `rl2-lab` with no GPU in `AllocTRES`, despite
+  `--gres=gpu:a40:1`. Each died at `nvidia-smi` ("No devices were found", exit 6) before
+  any work ran. Other `rl2-lab` jobs the same day did get GPUs, so the trigger is unknown
+  (possibly the lab A40 QoS limit). When a GPU job starts, check that
+  `sacct -X -o AllocTRES` shows `gres/gpu`; if it does not, resubmit on `overcap`, where
+  every campaign start got its GPU.
+- For campaigns exceeding the lab quota, or using RTX 6000 / 2080 Ti, use
+  `--partition=overcap --qos=short`. The 2026-10-21 partition QoS permits 48 GPUs
+  per user there; `rl2-lab` permits eight A40s / eight L40Ss and zero RTX 6000s /
+  2080 Tis. Query current QoS and free CPUs as well as free GPUs before scheduling.
 - Compare speed only within one GPU type, and record the type. The 2026-09-28 Kimodo
   smoke ran on an L40S; the 2026-09-30 benchmark runs on A40.
 - Memory is not a scheduled resource (`--mem` is not enforced). Check `FreeMem` before

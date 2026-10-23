@@ -182,7 +182,18 @@ crowd bench sim-speed --num-envs 1024 4096 --out runs/<UTC>_sim_speed     # simu
   generation call starts, so seams can be inspected.
 - `crowd bench sim-speed` measures `S` for the G1 velocity task (robot only, an upper
   bound) and the corridor fixture with 4 and 8 humans and LiDAR, with zero actions and
-  no policy.
+  no policy. `--scenes plaza-rigid-16 plaza-capsules-16 ...` adds the graph-driven
+  plaza with rigid mesh or capsule humans, and times graph stepping with pose writes
+  (`command_ms`) and sensing (`sense_ms`).
+- `crowd bench body-geometry --config configs/bench/body_geometry_a40.json` times LiDAR
+  sensing for human body geometries at training scale. Geometries: capsules, rigid
+  Core-skin pieces per bone (mesh geoms on mocap bodies, optionally 32 per-world
+  variants) and a Core skin deformed by LBS every step. It also measures per-ray
+  range fidelity against full-resolution skinning. Each case runs in its own process
+  and appends to `rows.jsonl`; `summary.md` tabulates the rows. The geometries come
+  from `crowdmotion.sim.body`; the module docstring lists the stages it times.
+  `configs/bench/body_geometry_matrix_a40.json` covers 4, 8 and 16 humans for 32-shape
+  rigid pieces and SAH-built skinned surfaces.
 - The ARDY profiler and `torch.compile` comparison, and the model smoke tests, are
   scripts: `scripts/smoke/profile_ardy.py`, `scripts/smoke/ardy_smoke.py`,
   `scripts/smoke/kimodo_smoke.py` (GPU; on the cluster through `scripts/slurm/`).

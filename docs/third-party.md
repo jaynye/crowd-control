@@ -52,6 +52,29 @@ fetched separately ([data](data.md)).
   `SOMALayer(data_root="third_party/soma-x", identity_model_type="soma", lod="xlo")`.
 - `third_party/soma-x/SOMA-X-HF-MANIFEST.json` lists every file with its sha256.
 
+## gear-sonic
+
+NVIDIA's GR00T Whole-Body Control release: the SONIC tracker and kinematic planner for the G1,
+used by the planning arms (`backends.sonic`; [architecture](architecture.md#planning-arms)).
+Nothing of it is installed or imported: `backends.sonic` reads the released ONNX files and
+reproduces the deploy code's conventions.
+
+- The source (`third_party/GR00T-WholeBodyControl`, pinned `commit`) is reference only:
+  the deploy C++ (`gear_sonic_deploy/src/g1/g1_deploy_onnx_ref/`) defines the observation
+  layouts, joint orders, gains and the planner's replanning and blending; `motionbricks/`
+  is the planner's PyTorch source (MotionBricks). Clone it with `GIT_LFS_SKIP_SMUDGE=1`: its
+  LFS files are media and checkpoints.
+- The weights come from Hugging Face (`hf_repo` at `hf_commit`) into
+  `$CROWD_CHECKPOINTS/GEAR-SONIC/`: `hf download nvidia/GEAR-SONIC --revision <hf_commit>
+  --exclude 'bones_seed_smpl/*' --exclude 'media/*' --exclude '*.gif' --local-dir
+  checkpoints/GEAR-SONIC` (pass `--exclude` once per pattern). The planning arms read
+  `model_encoder.onnx`, `model_decoder.onnx` and `planner_sonic.onnx`.
+- MotionBricks' own checkpoints (`motionbricks/out/**`) are LFS objects the clone skips.
+  Fetch one by the oid and size in its pointer (`git show HEAD:<path>`) through GitHub's LFS
+  batch API into `$CROWD_CHECKPOINTS/MotionBricks/`, not into the clone, and check its sha256
+  against the oid. `scripts/smoke/motionbricks_weights_match.py` compares one with the ONNX
+  planner.
+
 ## Upgrading a pin
 
 1. Edit the commit (or revision) in `third_party.toml`.
@@ -90,7 +113,9 @@ in `pyproject.toml`), installed editable, so edits take effect immediately.
   - `LidarPatternCfg`: an angular azimuth × elevation raster from one origin;
   - `RayCastSensorCfg.min_distance`: nearer returns report −1 and still occlude;
   - `RayCastData.geom_ids`: hit geom IDs for debugging (never a policy observation);
-  - `RayCastSensorCfg.VizCfg.stride`: draw every Nth ray.
+  - `RayCastSensorCfg.VizCfg.stride`: draw every Nth ray;
+  - `RayCastSensor.add_ray_target`: extra geometry cast inside the sense graph, nearer
+    hit wins (used by rigid mesh humans; tested in `mjlab/tests/test_raycast_sensor.py`).
 - Run mjlab's own tests from inside `mjlab/` with the shared environment:
   `cd mjlab && ../.venv/bin/python -m pytest tests/test_lidar_pattern.py`.
 

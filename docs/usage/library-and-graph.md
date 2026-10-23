@@ -31,9 +31,61 @@ each human's own generator, so they do not depend on batch composition.
 
 **Config keys:** `model`, `steps`, `cfg_type`, `precision`, `history`, `edge_frames`,
 `humans`, `batch` (humans per generation batch), `duration` (seconds per stream),
-`seed`, and `commands` (fields of `CommandRanges`). `configs/library/ardy_a40.json` is
-the setting of the current library (H40, TF32, no guidance, 5 steps, 2,048 × 32 s);
-`ardy_smoke.json` is a small pipeline check.
+`seed`, `command_source` (`"random"`, the default, or `"turns"`), and `commands` (fields
+of `CommandRanges`, or of `TurnRanges` for turning commands).
+`configs/library/ardy_a40.json` is the setting of the current library (H40, TF32, no
+guidance, 5 steps, 2,048 × 32 s); `ardy_smoke.json` is a small pipeline check.
+`ardy_turns_a40.json` is the supplementary turning library: the same model setting,
+turning commands with heading and path constrained on every 10th planned frame,
+1,024 × 32 s. `ardy_turns_smoke.json` is its 256-stream check with every frame
+constrained.
+
+### Turning commands and body-heading targets
+
+Root-path conditioning alone never asks ARDY to rotate a body that stays in place, so a
+random-command library holds almost no in-place or slow turns. With
+`"command_source": "turns"`, `TurnCommands` (`behavior/commands.py`) drives the
+generation instead, and the request also carries per-frame **body-heading targets**:
+
+- **Segments** form a per-human semi-Markov chain over walk, stand, in-place turn and
+  arc. The next kind is drawn from `start`, `next_walk`, `next_stand`,
+  `next_in_place` and `next_arc`, which list probabilities in the order walk, stand,
+  in_place, arc. The defaults give sequences such as stand → in-place turn → walk off,
+  and walk → arc → walk.
+- **In-place turns** have speed 0. Each turns through a signed angle (`in_place_deg`)
+  at a rate (`in_place_rate_deg`), then settles for `settle_s`.
+- **Arcs** follow a circle of radius `arc_radius_m` through a signed angle (`arc_deg`).
+  Speed comes from `speed_bands`; after walking, the arc keeps the walking speed
+  (`arc_keep_speed`). Tighter arcs are walked slower, capped at `arc_max_rate_deg`.
+- **Draws** come from each human's own generator, never from the executed motion, so
+  segment sequences do not depend on batch composition, nor on whether targets are
+  passed. A segment starts from the executed heading at the edge boundary that enters it.
+- **Planning.** `TurnCommands.plan` is the controller's planner. It traces the rest of
+  the segment with `planner.plan_arc` and stores per-frame targets. These targets
+  start at the executed heading and blend to the segment schedule over `blend_s`. While
+  walking or on an arc, they turn toward the planned path's tangent, fully at
+  `forward_speed`, so the body faces where it walks. `motion_options()` hands them to
+  the motion source as `root_heading`.
+- **Switches.** `heading_targets` (off: path only, with the same segments),
+  `walk_heading` and `stand_heading` (constrain straight walking and standing too),
+  `heading_every` and `path_every` (constrain every k-th planned frame only; the other
+  frames are free).
+
+`MotionRequest.root_heading` (`[B, F]`, radians, NaN = unconstrained frame) is
+implemented for ARDY only. It constrains ARDY's `global_root_heading` feature to
+`[cos h, sin h]`, normalized like the root path, in both condition modes. A NaN path
+frame is supported by the vectorized conditions only. Kimodo rejects heading targets.
+`scripts/smoke/ardy_heading.py` checks that the two condition modes agree, and checks
+the angle convention from standing.
+
+The returned `heading` is decoded from that same feature. Under a target it can drift
+away from where the body actually faces. Turn checks therefore measure the hip line
+from the posed joints (`crowd library turns`).
+
+Some in-place turns are **twists**: the pelvis turns while the feet stay planted.
+`crowd library turns` reports the twist rate: the share of in-place turns whose feet
+have turned less than 40% of the command 1.5 s after the segment. `crowd graph turns`
+counts edges whose feet point away from the body.
 
 ### `library.pt`
 
@@ -47,9 +99,11 @@ A `torch.save` dict:
 | `contacts` | `[N, T, C]` | The model's foot-contact labels |
 | `local_rot` | `[N, T, J, 3, 3]` | float16 |
 | `features` | `[N, T, D]` | ARDY normalized features, float16 (to re-seed ARDY from a library state) |
-| `cmd_speed`, `cmd_heading`, `cmd_mode` | `[N, T / edge_frames]` | The command each edge was generated under (mode 0 walk, 1 stand) |
+| `cmd_speed`, `cmd_heading`, `cmd_mode` | `[N, T / edge_frames]` | The command each edge was generated under (mode 0 walk, 1 stand; turning commands add 2 in-place turn, 3 arc) |
+| `heading_target` | `[N, T]` | Turning commands only: the dense planned heading reference of each executed frame (also where it was not constrained) |
+| `cmd_rate`, `cmd_angle`, `cmd_radius`, `cmd_segment` | `[N, T / edge_frames]` | Turning commands only: signed turn rate (rad/s), signed segment turn (rad), arc radius (m, NaN otherwise), segment counter |
 | `seeds` | `[N]` | Per-stream seed |
-| `meta` | dict | `fps`, `edge_frames`, `history`, `joint_names`, `parents`, `foot_idx`, `head_idx`, `neutral_head_height`, generator settings |
+| `meta` | dict | `fps`, `edge_frames`, `history`, `joint_names`, `parents`, `foot_idx`, `head_idx`, `neutral_head_height`, generator settings (`command_source` when not random) |
 
 ## The motion graph
 
@@ -111,12 +165,40 @@ crowd graph build --library <library.pt> --config configs/graph/default.json \
 - Overrides may change scoring and correction, but not `neighbors`, `vel_weight` or
   `hunch_ratio`, which are fixed when the graph is built.
 - The build takes a few seconds on an A40 and is very slow on CPU.
+- **Several libraries** build one graph:
+  `crowd graph build --library base.pt turns.pt ...`.
+  - The libraries must agree on `fps`, `edge_frames`, joint names, parents, feet, head
+    and neutral head height.
+  - Streams are concatenated in the order given. Every stream is truncated to the
+    shortest library's whole edges (a warning names the truncated libraries), so
+    generate supplements at the base library's duration.
+  - The merged `meta` lists each library under `sources` (path, streams, frames,
+    command source), in stream order.
+  - `crowd graph rotations` takes the same libraries in the same order.
 
 `graph.pt` is a dict: `tables` (`pred_pose`, `pred_vel`, `edge_root`, `edge_yaw`,
 `edge_pose`, `edge_contacts`, `edge_end_vel`, `valid`, `root_speed`, `cand`,
 `cand_dist`), `cfg`, `meta`, `fps`, `L`, `streams`, `K`, `joints_n`, `stats` and
 `rest_joints`. `crowd graph report` audits it on CPU
 ([behavior iteration](behavior-iteration.md#1-audit-the-graph)).
+
+The graph keeps joint positions only. Rigid mesh humans in the mjlab plaza also need
+bone rotations, saved beside it by
+
+```bash
+crowd graph rotations --graph <graph.pt> --library <library.pt> [<library.pt> ...] --device cuda \
+    --out runs/<UTC>_graph_rotations
+```
+
+`rotations.pt` holds `edge_rot [B, L, J, 4]` and `pred_rot [B, J, 4]`, aligned with
+`edge_pose` and `pred_pose`. These are float16 wxyz quaternions of the library's
+global joint rotations relative to each frame's heading. It also holds `offsets [J, 3]`,
+each joint's rest offset in its parent's frame. Loading
+(`graph.rotations.GraphRotations.load`) samples edges and checks that each parent's
+rotation carries the rest offset onto the graph's bone vector; a file from another
+graph or library fails. For `graph-default` the file is the `graph-rotations`
+artifact: 0.32 GB, built in about a minute on an A40, with bone directions within
+1 degree of the graph.
 
 ## Evaluating a library and its graph
 
@@ -140,6 +222,33 @@ crowd bench quality --config configs/bench/graph_a40_v2.json --library <library.
   after each human's change, split into humans who respond (`_responders`) and who never
   do (`_never`). If even the best candidate is far from the request, the gap is
   coverage; if the best is close but the chosen one is not, it is selection.
+
+**Turning.** `crowd library turns --library <library.pt ...> --overrides <json>`
+checks turning libraries per segment kind:
+
+- **Turns.** Executed against commanded in-place and arc turns, measured on the hip
+  line from the frame before the segment to `--lag-s` after it.
+- **Heading.** Returned heading against the reference and the hip line.
+- **In place.** Root drift (split by whether the human was at rest before), foot turn
+  and lift-offs during in-place turns.
+- **Arcs.** Executed arc radius and forward travel.
+- **Feet and ground.** Planted-foot speed, pelvis height, and per-edge validity and
+  flat-ground admissibility under the given graph overrides. The admissibility uses the
+  same annotations and mask as the graph.
+
+A random-command library in the same call gives walk and stand reference rows.
+`--clips N` writes in-place turn clips for `crowd bench clips`.
+
+`crowd graph turns --graph <graph.pt ...> --overrides <json>` counts a saved graph's
+admissible edges by turning class, upright or hunched:
+
+- in place;
+- forward turns, by radius bin;
+- non-forward turns;
+- 1.2 s windows turning at least 45°.
+
+A merged graph is also split per source library, and every count is also given per
+motion hour.
 
 **Runtime cost.**
 

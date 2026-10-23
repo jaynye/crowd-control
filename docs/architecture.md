@@ -33,15 +33,16 @@ lower ones (`tests/unit/test_layering.py` parses every import and checks this).
 |---|---|---|
 | L4 | `cli` | The `crowd` command table |
 | L3 | `iterate/` | Behavior evaluation (`evaluate`), paired comparison (`compare`), iteration sessions and their local and Slurm executors |
-| L3 | `library/` | Offline library generation (`generate`) |
+| L3 | `library/` | Offline library generation (`generate`; random or turning commands), turn checks of turning libraries (`turns`) |
 | L3 | `bench/` | Throughput, continuation quality, graph speed, simulator speed, summary tables |
-| L3 | `sim/mjlab/` | The mjlab integration: the `GraphCrowd` command term (`command`), the plaza environment (`plaza`), demos (`demo`), the corridor fixture (`corridor/`) |
-| L3 | `viz/` | Replay videos (`replay`), the graph audit report (`report`), stick-figure clips (`stick`), HTML templates |
-| L2 | `behavior/` | The crowd loop: `controller`, motion `sources`, command sources (`commands`, `plaza` = `intent` + `steering`), `planner`, velocity estimators (`kinematics`) |
-| L1 | `graph/` | The motion graph: `config`, `tables` (`MotionGraph`, `graph.pt`), `build` (kNN), `costs`, `runtime`, `audit` |
-| L1 | `backends/` | Online generator adapters: `base` (request/chunk contract), `registry` (typed configs, `make_backend`), `ardy`, `kimodo`, `text` |
+| L3 | `sim/mjlab/` | The mjlab integration: the `GraphCrowd` command term (`command`), queued live controls (`tuning`), the plaza environment (`plaza`), the robot training environment (`traversal`) and its training command (`train`), frozen SONIC on the G1 (`sonic_control`) and the planning arms' decision-rate env (`planning`), demos (`demo`), the corridor fixture (`corridor/`) |
+| L3 | `tracking/` | W&B run continuity for training lineages: identity and the writer lock in `run.json` (`lineage`), evaluation outbox and ledger (`evals`, `attach_eval`), TensorBoard rows cut per attempt (`history`), `crowd wandb sync\|status` (`sync`). The live writer is `sim/mjlab/wandb_log` |
+| L3 | `viz/` | Replay videos (`replay`), the graph audit report (`report`), sampled posture/height sheets (`edge_review`), stick-figure clips (`stick`), HTML templates |
+| L2 | `behavior/` | The crowd loop: `controller`, motion `sources`, command sources (`commands`, `plaza` = `intent` + `steering`, `encounter`; `designs` builds either), `planner`, velocity estimators (`kinematics`) |
+| L1 | `graph/` | The motion graph: `config`, `tables` (`MotionGraph`, `graph.pt`), `build` (kNN, multi-library loading), `costs`, `runtime`, `audit`, turning coverage `turns`, derived `annotations`, independent `posture` state, saved joint `rotations` (`rotations.pt`, for rigid mesh humans) |
+| L1 | `backends/` | Online generator adapters: `base` (request/chunk contract), `registry` (typed configs, `make_backend`), `ardy`, `kimodo`, `text`; NVIDIA SONIC for the robot: the tracker, its plan buffer and the batched kinematic planner (`sonic`) over a batched ONNX executor (`onnx_port`) |
 | L1 | `metrics/` | Locomotion direction classes, foot sliding, seams, posture, response times, spacing, graph diagnostics |
-| L1 | `sim/scene`, `sim/capsules` | The plaza scene builders and capsule humans, without mjlab |
+| L1 | `sim/scene`, `sim/capsules`, `sim/body`, `sim/rays` | The plaza scene builders, capsule humans, mesh humans (Core skin: skinning, decimation, rigid per-bone pieces, quaternion and swing helpers) and the Warp ray target for rigid humans, without mjlab |
 | L0 | `core/` | `rng` (per-human streams), `geometry`, `skeleton`, `trace`, `config`, `paths` (artifacts), `rundir`, `provenance`, `timing` |
 
 Two further import rules: only `sim.mjlab` imports mjlab at module level, and only
@@ -65,9 +66,9 @@ Humans are rows `[H]`. With `group = M`, rows are environment-major (`env * M + 
 
 | Consumer | Command source | Motion source | Velocity |
 |---|---|---|---|
-| `crowd behavior evaluate` | `PlazaBehavior` | `GraphMotionSource` | `BufferVelocity` |
-| mjlab `GraphCrowd` | `PlazaBehavior` | `GraphMotionSource` | `BufferVelocity` |
-| `crowd library generate` | `RandomCommands` | `OnlineMotionSource` (ARDY) | `WindowVelocity` |
+| `crowd behavior evaluate` | `PlazaBehavior` or `EncounterBehavior` | `GraphMotionSource` | `BufferVelocity` |
+| mjlab `GraphCrowd` | `PlazaBehavior` or `EncounterBehavior` | `GraphMotionSource` | `BufferVelocity` |
+| `crowd library generate` | `RandomCommands`, or `TurnCommands` (also the planner; heading targets as `root_heading`) | `OnlineMotionSource` (ARDY) | `WindowVelocity` |
 | `crowd bench quality` | `ScenarioCommands` | `GraphMotionSource` or `OnlineMotionSource` | `WindowVelocity` |
 | `crowd bench throughput` | random arcs (`planner.random_arc_paths`) | `OnlineMotionSource` | (no planner) |
 
@@ -82,6 +83,9 @@ A command source implements `command(t, kinematics, groups) -> (speed [H], headi
 
 - `RandomCommands`: per-human semi-Markov segments (stand, or walk at a sampled speed
   and heading change, optionally curving), from each human's own NumPy generator.
+- `TurnCommands`: per-human semi-Markov stand / walk / in-place turn / arc segments for
+  the turning library. Its `plan` method is the controller's planner (`planner.plan_arc`),
+  and `motion_options()` hands per-frame body-heading targets to the motion source.
 - `ScenarioCommands`: the quality benchmark's schedules (`cruise`, `stop_start`,
   `turn90`, `turn180`, `speed_step`), with per-human change offsets.
 - `PlazaBehavior`: intent then steering, the separation the project keeps between
@@ -90,6 +94,16 @@ A command source implements `command(t, kinematics, groups) -> (speed [H], headi
     arrival, sometimes wait;
   - `LocalSteering`: avoidance of neighbors by time to closest approach (with priority
     over the goal), a hard push at contact range, wall and obstacle repulsion.
+- `EncounterBehavior` (the `encounter` design): waypoint or velocity conditioning,
+  then a collision bubble with assertiveness- and distance-dependent switching into
+  committed interventions (sidestep, veer, pivot, yield), then a stop rule. It plans
+  with `planner.plan_arc`, so a gradual turn requests an arc of a chosen radius and a
+  zero speed turns in place. Through `motion_options` it asks the graph to hold a body
+  target during sidesteps and in-place turns. Its draws come from per-human counter
+  streams. Usage: [behavior designs](usage/behavior-iteration.md#behavior-designs).
+
+`behavior.designs.make_behavior` builds either design's command source and planner,
+which is how the evaluator, `GraphCrowd` and the demos select a design from a config.
 
 ### Motion sources
 
@@ -157,7 +171,7 @@ path, per-human seeds and counters, fresh-start state, text features) returns a
 Per-human randomness is counter-based: draw `counter` of human stream `seed` depends on
 nothing else (`core.rng`: SplitMix64 hashing, per-row torch generators), so results do
 not depend on batch size, order or composition. Graph sampling, start boundaries,
-diffusion noise and `RandomCommands` follow this rule.
+diffusion noise, `RandomCommands` and `TurnCommands` follow this rule.
 
 Stream ids come from `core.rng.human_seeds`, whose named schemes are the formulas
 existing outputs were made with (`quality`, `stream`, `evaluator`, `graphcrowd`).
@@ -179,11 +193,65 @@ deliberate behavior change.
 ## mjlab integration
 
 `sim.mjlab.plaza.make_plaza_env_cfg` builds a kinematic plaza: walls, a fixed LiDAR rig
-(360 × 16 rays) and capsule humans (one mocap body per bone, `sim.capsules`). The
-`GraphCrowd` command term (`sim.mjlab.command`) owns a `CrowdController`; each
-environment step it advances clocks, steps the controller for environments whose edge
-ran out, interpolates frames to the current time, converts them to MuJoCo Z-up and
-writes mocap poses. Because the crowd is a command term, every mjlab viewer shows it.
+(360 × 16 rays) and humans, by default rigid Core-skin meshes (`sim.body`), optionally
+capsules (`sim.capsules`) or both. The `GraphCrowd` command term (`sim.mjlab.command`)
+owns a `CrowdController`; each environment step it advances clocks, steps the
+controller for environments whose edge ran out, interpolates frames to the current
+time, converts them to MuJoCo Z-up and writes mocap poses. Because the crowd is a
+command term, every mjlab viewer shows it.
+
+Rigid humans pair the graph's joint positions with saved joint rotations
+(`graph.rotations`, checked against the graph at load). Their pieces are visual geoms
+outside the LiDAR's geom groups. The LiDAR sees them through a Warp ray target
+(`sim.rays`): one mesh per piece shared by all humans, a box test per human, then
+per-piece queries in bone frames. `GraphCrowd` registers it with mjlab's
+`RayCastSensor.add_ray_target` (a general hook in our mjlab) and recaptures the sense
+graph. The target merges by nearer hit, so `min_distance`, `max_distance` and geom ids
+keep their meaning.
+
+`sim.mjlab.traversal` is the robot training environment. It is mjlab's flat G1 velocity
+task with several additions:
+
+- The encounter plaza's walls and a `GraphCrowd` of rigid humans.
+- `CrowdGoalCommand`, which keeps the velocity task's `twist` interface but recomputes
+  the command every step toward a random goal in the plaza. It also places the robot,
+  after the crowd resets, at the start farthest from the humans.
+- A LiDAR on a provisional head site (`torso_link`). Its geom groups are only the
+  floor, the walls and the humans' ray-target group, so the robot never sees itself.
+- Robot–human clearance between robot spheres and human joint spheres, which drives
+  the proximity and contact costs and the collision termination.
+- Privileged nearest-human states for the critic.
+
+The env has three observation groups: `actor` (the deployable LiDAR input), `teacher` (privileged nearest-human states and plaza pose in addition to the LiDAR; `--no-teacher-lidar` drops the LiDAR) and `critic` (both). Three tasks share it: PPO on `actor`, PPO on `teacher`, and a student that distills a teacher checkpoint into `actor` with RSL-RL's `Distillation`. The humans perceive the robot as an external agent of the encounter design (`GraphCrowdCfg.perceive_entity`), each oblivious, stubborn or cooperative toward it by the behavior config's `robot_*` settings; `--robot-blind` turns this off. `--crowd-curriculum RATE` (`traversal.crowd_difficulty_term`) moves those shares toward the robot-blind crowd during training, one step per iteration while the training collision rate stays at or below RATE: it edits the crowd's live encounter config, which each human reads at its reset, and its level is saved in checkpoints through mjlab's `CurriculumManager.state_dict`. `--forward-first` scales the goal command's speed by max(cos heading error, 0), and the `goal_heading` reward, (1 + cos heading error) / 2 at weight 1.0, keeps the robot facing its goal (without it the policy learns to walk backward). The goal command also logs episode means of the heading error, the backward-walking share and the speed. A collision ends the episode; the `collision_end` reward (weight 0, so off, by default) adds a terminal penalty on that step, since otherwise a collision costs only the forfeited return. `crowd train traversal` (`sim.mjlab.train`)
+registers the task and runs mjlab's training inside a run directory. `crowd play traversal`
+(`sim.mjlab.play`) replays a run's policy in the env its `run.json` records, in Viser, the
+native viewer or an MP4. Its Viser viewer is live (`sim.mjlab.live_viewer`; what it offers
+and what each switch needs is `sim.mjlab.live`): it builds the evaluator's env
+(`evaluate.eval_env_cfg`) for a policy and crowd, switches either from the GUI by loading
+in place, by a queued edit of the running crowd, or by rebuilding the env under the same
+Viser server, and shows `TraversalMetrics` live.
+
+### Planning arms
+
+`--planner-rate 1|2` trains a policy over NVIDIA's released G1 stack instead of on joint
+targets. `backends.sonic.SonicTracker` is SONIC's universal-token tracker (the release's
+`model_encoder.onnx` and `model_decoder.onnx` as torch MLPs, equal to ONNX Runtime) and
+`SonicPlanner` the kinematic planner (`planner_sonic.onnx`, batched by
+`backends.onnx_port.OnnxPort` under `torch.vmap`, FP32). `PlanBuffer` keeps each env's
+planned motion as the release's deploy code does (30 to 50 Hz resampling, an 8-frame
+cross-fade of each new plan, context sampled from the planned motion, playback one frame per
+control step). `sim.mjlab.sonic_control.SonicController` builds the tracker's observations
+from mjlab's G1, which has SONIC's joint order, gains, default pose and action scale, and
+returns the env's `joint_pos` actions. `sim.mjlab.planning.PlanningVecEnv` wraps the traversal
+env as an RSL-RL env whose step is one decision: the action (3 numbers in [-1, 1]) is a
+residual on the goal command, a planar velocity offset in the heading frame and a facing
+offset, so that a zero action is plain goal following (P0). Each decision replans every env,
+then the tracker runs 50 (1 Hz) or 25 (2 Hz) control steps; rewards are summed over them and
+an env that ends mid-decision ends its transition there. Observations add the plan summary
+(planned root positions 0.25, 0.5 and 1 s ahead, the plan's remaining time) and the previous
+action. The env keeps only the task rewards (`traversal.PLANNER_REWARDS`); PPO counts in
+decisions (16 s of rollout per env and iteration, gamma 0.75 and lambda 0.9 per second).
+Teachers and students work as for the plain policy.
 
 `sim.scene` builds the plaza for both mjlab and the replay renderer from one place. The
 two presets differ deliberately: the replay draws steering obstacles as cylinders,

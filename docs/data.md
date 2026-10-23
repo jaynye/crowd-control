@@ -6,6 +6,7 @@ Nothing large is tracked in git. Three kinds of data live outside it:
 |---|---|---|
 | Third-party sources and assets (Kimodo, ARDY, SOMA-X) | `third_party/` | `scripts/bootstrap.sh` ([third-party sources](third-party.md)) |
 | Model checkpoints (ARDY, Kimodo) | `checkpoints/` (or `$CROWD_CHECKPOINTS`) | `scripts/fetch_artifacts.sh --checkpoints` |
+| NVIDIA SONIC release (tracker and planner ONNX; MotionBricks checkpoints) | `checkpoints/GEAR-SONIC/`, `checkpoints/MotionBricks/` | by hand ([gear-sonic](third-party.md#gear-sonic)) |
 | Run artifacts (the saved motion graph, the motion library) | `runs/` | `scripts/fetch_artifacts.sh` |
 
 ## Checkpoints
@@ -81,12 +82,18 @@ artifact (`run.json`, `graph.json`) are copied too when they exist.
 | Artifact | Default | Size | What |
 |---|---|---|---|
 | `graph-default` | yes | 0.44 GB | The saved motion graph: k = 128 candidates, `configs/graph/default.json`, built from `library-ardy-h40`; 134,820 valid 0.4 s edges. Everything in behavior iteration and the mjlab demos reads it |
+| `graph-rotations` | yes | 0.32 GB | Joint rotations for every frame of `graph-default` (`crowd graph rotations`, from `library-ardy-h40`). The mjlab plaza's rigid mesh humans need it; a load-time check rejects a file that does not match the graph |
 | `library-ardy-h40` | no | 1.96 GB | The offline ARDY H40 library it was built from: 2,048 streams × 32 s (18.2 h) at 20 fps, Core skeleton. Needed only to rebuild the graph or audit library commands |
+| `library-ardy-turns` | no | 0.98 GB | Supplementary ARDY H40 turning library (`configs/library/ardy_turns_a40.json`): 1,024 streams × 32 s (9.1 h) of in-place turns, arcs, walking and standing generated with body-heading targets ([library and graph](usage/library-and-graph.md#turning-commands-and-body-heading-targets)). Needed only to rebuild `graph-turns` |
+| `graph-turns` | no | 0.66 GB | Opt-in merged graph over `library-ardy-h40` then `library-ardy-turns` (`configs/graph/default.json`; 213,608 valid edges). Select it with `CROWD_GRAPH` (or `--graph`) |
+| `graph-turns-rotations` | no | 0.48 GB | Joint rotations for `graph-turns` (`crowd graph rotations` over both libraries, same order). Select with `CROWD_GRAPH_ROTATIONS` together with `graph-turns` |
 | `pre-migration-snapshot` | no | 65 MB | Source tree before the 2026-10 reorganization, kept as a reference for bit-exact checks of generation on a GPU |
 
 Commands that read the saved graph (`crowd behavior evaluate`, `crowd graph report`,
 `crowd demo ...`) default to `$CROWD_GRAPH`, else the `graph-default` path from the
-manifest (`crowdmotion.core.paths.default_graph`). Formats: `graph.pt` and `library.pt`
+manifest (`crowdmotion.core.paths.default_graph`). Rigid mesh humans also read
+`$CROWD_GRAPH_ROTATIONS`, else the `graph-rotations` path; a different graph needs its
+own `crowd graph rotations --graph <graph.pt> --library <library.pt>`. Formats: `graph.pt` and `library.pt`
 are described in [library and graph](usage/library-and-graph.md).
 
 To publish a new artifact: add a `[artifact.<name>]` table with `path`, `sha256`
